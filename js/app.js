@@ -409,6 +409,7 @@ function send() {
   ].filter((x, i, a) => x !== '' || (a[i - 1] !== '' && i < a.length - 1)).join('\n');
 
   saveLastOrder(code, ls, goods + fee, name, addr, $('#fPay').value, mode());
+  syncForgetBtn();
 
   st.wa = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
   $('#doneT').textContent = 'Заказ #' + code + ' сформирован';
@@ -596,6 +597,28 @@ const info = load(INFO, {});
 if (info.name) $('#fName').value = info.name;
 if (info.addr) $('#fAddr').value = info.addr;
 if (info.pay) $('#fPay').value = info.pay;
+
+const forgetBtn = $('#forgetInfo');
+function syncForgetBtn() {
+  if (forgetBtn) {
+    const hasData = !!(load(INFO, {}).name || load(INFO, {}).addr || load(LAST_ORDER_KEY, null));
+    forgetBtn.hidden = !hasData;
+  }
+}
+if (forgetBtn) {
+  forgetBtn.addEventListener('click', () => {
+    localStorage.removeItem(INFO);
+    localStorage.removeItem(LAST_ORDER_KEY);
+    $('#fName').value = '';
+    $('#fAddr').value = '';
+    $('#fNote').value = '';
+    const banner = $('#reorderBanner');
+    if (banner) banner.hidden = true;
+    syncForgetBtn();
+    toast('Ваши сохранённые данные очищены');
+  });
+}
+syncForgetBtn();
 
 wRes();
 syncMode();
