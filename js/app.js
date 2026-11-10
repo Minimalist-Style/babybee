@@ -6,7 +6,7 @@ const CATS = [['all', 'Все товары'], ['pants', 'Трусики'], ['dia
 const TABLE = [['NB', 2, 5], ['S', 4, 8], ['M', 6, 11], ['L', 9, 14], ['XL', 12, 18], ['XXL', 15, 22], ['XXXL', 20, 30]];
 const DAILY = { NB: 7, S: 6, M: 5, L: 4, XL: 3.5, XXL: 3, XXXL: 3 };
 const UPSELL = ['mama_znaet_wipes_15', 'softcare_wipes_80', 'luna_baby_wipes_120'];
-const INERT = ['#top', '.ftr', '#hdr', '#mobileDock', '#bar'];
+const INERT = ['.skip', '#top', '.ftr', '#hdr', '#mobileDock', '#bar'];
 const COMBOS = [
   { id: 'calm', title: 'Спокойный месяц', desc: 'Трусики Baybee и большая пачка салфеток LUNA Baby (120 шт).', sized: 'baybee_pants', items: ['baybee_pants', 'luna_baby_wipes_120'] },
   { id: 'baby', title: 'Малыш 0+ и Эко-Дом', desc: 'Подгузники для новорождённых, эко-гель для белья и мини-салфетки.', sized: 'mama_znaet_diapers', items: ['mama_znaet_diapers', 'mama_znaet_eco_baby_gel', 'mama_znaet_wipes_15'] },
@@ -18,16 +18,19 @@ const fmt = n => n.toLocaleString('ru-RU') + ' ₸';
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ESC[c]);
 const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[–—]/g, '-');
+const normQuery = s => norm(s).replace(/\s*-\s*/g, '-').replace(/\s+/g, ' ').trim();
 const clean = s => String(s || '').replace(/\p{Extended_Pictographic}|\p{Regional_Indicator}|\uFE0F|\u200D/gu, '').trim();
 const range = s => s.weight.replace(' кг', '').split('–').map(Number);
 const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const drop = k => { try { localStorage.removeItem(k); } catch (e) {} };
 const MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || (window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 900);
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SMOOTH = REDUCED ? 'auto' : 'smooth';
 
 const rawCart = load(KEY, []);
 const st = {
-  products: [], map: {}, cat: 'all', brand: 'all', q: '', sort: 'pop',
+  products: [], map: {}, cat: 'all', brand: 'all', q: '', tokens: [], sort: 'pop',
   w: null, sz: null, sel: {}, csel: {}, wa: '',
   cart: Array.isArray(rawCart) ? rawCart.filter(x => x && typeof x.id === 'string' && Number.isInteger(x.si) && Number.isInteger(x.qty) && x.qty > 0) : []
 };
@@ -54,6 +57,7 @@ const idx = p => {
 };
 const qty = (id, si) => { const l = st.cart.find(x => x.id === id && x.si === si); return l ? l.qty : 0; };
 const spec = (p, i) => p.sizes ? p.sizes[i].size + ' · ' + p.sizes[i].weight + ' · ' + p.sizes[i].count + ' шт' : (p.volume || p.count || '');
+const matches = (p, tokens) => tokens.every(t => p._s.includes(t));
 
 function getProductUnitMetrics(p, si) {
   if (p.sizes && p.sizes[si]) {
@@ -93,12 +97,12 @@ function cardHTML(p) {
 }
 
 function filtered() {
-  const q = st.q;
+  const tk = st.tokens;
   let l = st.products.filter(p =>
     (st.cat === 'all' || p.category === st.cat) &&
     (st.brand === 'all' || p.brand === st.brand) &&
-    (!filterOn() || fitIdx(p) >= 0) &&
-    (!q || p._s.includes(q)));
+    (!filterOn() || !(p.sizes && p.sizes.length) || fitIdx(p) >= 0) &&
+    (!tk.length || matches(p, tk)));
   if (st.sort === 'asc') l = l.slice().sort((a, b) => a.price - b.price);
   if (st.sort === 'desc') l = l.slice().sort((a, b) => b.price - a.price);
   return l;
@@ -170,16 +174,16 @@ function flyHoney(rect) {
   if (!target) return;
   const t = target.getBoundingClientRect();
   const sx = rect.left + rect.width / 2, sy = rect.top;
-  const drop = document.createElement('div');
-  drop.className = 'honey-drop';
-  drop.setAttribute('aria-hidden', 'true');
-  drop.textContent = '🍯';
-  drop.style.left = sx + 'px';
-  drop.style.top = sy + 'px';
-  drop.style.setProperty('--tx', (t.left + t.width / 2 - sx) + 'px');
-  drop.style.setProperty('--ty', (t.top + t.height / 2 - sy) + 'px');
-  document.body.appendChild(drop);
-  setTimeout(() => drop.remove(), 750);
+  const dropEl = document.createElement('div');
+  dropEl.className = 'honey-drop';
+  dropEl.setAttribute('aria-hidden', 'true');
+  dropEl.textContent = '🍯';
+  dropEl.style.left = sx + 'px';
+  dropEl.style.top = sy + 'px';
+  dropEl.style.setProperty('--tx', (t.left + t.width / 2 - sx) + 'px');
+  dropEl.style.setProperty('--ty', (t.top + t.height / 2 - sy) + 'px');
+  document.body.appendChild(dropEl);
+  setTimeout(() => dropEl.remove(), 750);
 }
 
 function change(id, si, d, quiet, rect) {
@@ -206,10 +210,18 @@ function lines() {
 const total = () => lines().reduce((s, x) => s + x.sum, 0);
 const count = () => lines().reduce((s, x) => s + x.l.qty, 0);
 const plural = n => n % 10 === 1 && n % 100 !== 11 ? 'товар' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'товара' : 'товаров');
+const feeFor = (goods, pickup) => (pickup || goods >= FREE ? 0 : FEE);
 
 function mode() {
   const r = document.querySelector('input[name=mode]:checked');
   return r ? r.value : 'Доставка курьером';
+}
+
+function totalsUI() {
+  const goods = total(), n = count(), pickup = mode() === 'Самовывоз', fee = n ? feeFor(goods, pickup) : 0;
+  $('#goodsSum').textContent = fmt(goods);
+  $('#feeSum').textContent = !n ? '—' : (pickup ? '0 ₸ (самовывоз)' : (fee ? fmt(fee) : '0 ₸ (Бесплатно)'));
+  $('#total').textContent = fmt(goods + fee);
 }
 
 function shipUI() {
@@ -237,9 +249,17 @@ function shipUI() {
 
   if (upsell) {
     const cands = UPSELL.map(id => st.map[id]).filter(p => p && !st.cart.some(x => x.id === p.id)).sort((a, b) => a.price - b.price);
-    const s = cands.find(p => p.price >= diff);
+    let s = cands.find(p => p.price >= diff), title = 'Добавьте до бесплатной доставки:';
+    if (!s && cands.length) {
+      const top = cands[cands.length - 1];
+      if (diff - top.price <= 1500) {
+        s = top;
+        title = 'Добавьте салфетки за ' + fmt(top.price) + ' — останется всего ' + fmt(diff - top.price) + ' до бесплатной доставки!';
+      }
+    }
     if (s) {
       upsell.hidden = false;
+      $('#cartUpsellT').textContent = '💡 ' + title;
       $('#cartUpsellItem').innerHTML = `<div><div class='cart-upsell__name'>${esc(s.name)}</div><div class='cart-upsell__price'>+${fmt(s.price)}</div></div><button type='button' class='btn btn--p btn--sm' data-act='add' data-id='${esc(s.id)}' data-i='0'>+ Добавить</button>`;
     }
   }
@@ -260,9 +280,9 @@ function cartUI() {
   $('#barTotal').textContent = fmt(t);
   $('#barCount').textContent = n + ' ' + plural(n);
   $('#bar').classList.toggle('on', n > 0);
-  $('#total').textContent = fmt(t);
   $('#send').disabled = !n;
   $('#form').hidden = !n;
+  totalsUI();
   shipUI();
 
   $('#items').innerHTML = n
@@ -271,7 +291,7 @@ function cartUI() {
 }
 
 const drawer = $('#drawer'), scrim = $('#scrim');
-let lockY = 0;
+let lockY = 0, lastFocus = null;
 
 function setInert(on) {
   INERT.forEach(s => { const el = $(s); if (el) el.inert = on; });
@@ -294,7 +314,17 @@ function unlockScroll() {
   h.style.scrollBehavior = '';
 }
 
+function trapTab(e) {
+  const f = [...drawer.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.disabled && el.getClientRects().length > 0);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1], act = document.activeElement;
+  if (e.shiftKey && (act === first || !drawer.contains(act))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (act === last || !drawer.contains(act))) { e.preventDefault(); first.focus(); }
+}
+
 function openCart() {
+  lastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   $('#toast').classList.remove('on');
   drawer.classList.remove('is-done');
   $('#done').hidden = true;
@@ -312,6 +342,8 @@ function closeCart() {
   scrim.classList.remove('on');
   setTimeout(() => { scrim.hidden = true; }, 250);
   unlockScroll();
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+  lastFocus = null;
 }
 
 function syncMode() {
@@ -319,6 +351,7 @@ function syncMode() {
   $('#addrWrap').hidden = pickup;
   $('#silentWrap').hidden = pickup;
   $('#pickNote').hidden = !pickup;
+  totalsUI();
   shipUI();
 }
 
@@ -378,7 +411,7 @@ function send() {
     const a = $('#fAddr');
     a.classList.add('bad');
     $('#addrErr').hidden = false;
-    a.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    a.scrollIntoView({ behavior: SMOOTH, block: 'center' });
     a.focus({ preventScroll: true });
     return;
   }
@@ -388,7 +421,7 @@ function send() {
 
   const code = 'BB-' + Date.now().toString(36).slice(-5).toUpperCase();
   const ls = lines(), goods = total();
-  const fee = pickup || goods >= FREE ? 0 : FEE;
+  const fee = feeFor(goods, pickup);
   const silent = !pickup && $('#fSilent').checked;
 
   const msg = [
@@ -406,7 +439,7 @@ function send() {
     'Оплата: ' + $('#fPay').value,
     'Имя: ' + (name || 'не указано'),
     note ? 'Комментарий: ' + note : ''
-  ].filter((x, i, a) => x !== '' || (a[i - 1] !== '' && i < a.length - 1)).join('\n');
+  ].filter((x, i, a) => x !== '' || (a[i - 1] !== '' && i < a.length - 1)).join('\n').replace(/[\u00A0\u202F]/g, ' ');
 
   saveLastOrder(code, ls, goods + fee, name, addr, $('#fPay').value, mode());
   syncForgetBtn();
@@ -436,15 +469,22 @@ function wRes() {
     : '<em>Для такого веса уточните размер в WhatsApp</em>';
 }
 
-function setRange(v) {
+function setRangeValue(v) {
   v = Math.max(2, Math.min(30, v));
   $('#wRange').value = v;
   wRes();
 }
 
-function syncQw() {
+function codeForWeight(w) {
+  let best = null, bm = -1;
+  TABLE.forEach(([c, a, z]) => { if (w >= a && w <= z && a > bm) { bm = a; best = c; } });
+  return best;
+}
+
+function syncQw(w) {
+  const code = w !== undefined ? codeForWeight(w) : (st.sz || (st.w != null ? codeForWeight(st.w) : null));
   document.querySelectorAll('.qw-btn').forEach(b => {
-    const on = st.sz ? b.dataset.sz === st.sz : (st.w == null && b.dataset.w === 'all');
+    const on = code ? b.dataset.sz === code : b.dataset.w === 'all';
     b.classList.toggle('on', on);
     b.setAttribute('aria-pressed', String(on));
   });
@@ -453,7 +493,7 @@ function syncQw() {
 function afterFilter() {
   const tag = $('#wTag'), on = filterOn();
   tag.hidden = !on;
-  if (on) tag.innerHTML = `<span>${st.sz ? 'Размер ' + esc(st.sz) : 'Для ' + st.w + ' кг'}: показаны только подходящие подгузники</span><button type='button' data-act='wreset'>Сбросить</button>`;
+  if (on) tag.innerHTML = `<span>${st.sz ? 'Размер ' + esc(st.sz) : 'Для ' + st.w + ' кг'}: подгузники и трусики подобраны под размер</span><button type='button' data-act='wreset'>Сбросить</button>`;
   syncQw();
   render();
   renderCombos();
@@ -462,7 +502,7 @@ function afterFilter() {
 function setSize(code) {
   st.sz = code; st.w = null; st.sel = {}; st.csel = {};
   const row = TABLE.find(r => r[0] === code);
-  if (row) setRange(Math.round((row[1] + row[2]) / 2));
+  if (row) setRangeValue(Math.round((row[1] + row[2]) / 2));
   afterFilter();
 }
 function setWeight(w) {
@@ -474,8 +514,23 @@ function clearFilter() {
   afterFilter();
 }
 
+let wTimer;
+function previewWeight(v) {
+  setRangeValue(v);
+  const w = +$('#wRange').value;
+  syncQw(w);
+  clearTimeout(wTimer);
+  wTimer = setTimeout(() => setWeight(w), 200);
+}
+
+function setQuery(val) {
+  st.q = normQuery(val);
+  st.tokens = st.q.split(' ').filter(Boolean);
+}
+
 function resetFilters() {
-  st.cat = 'all'; st.brand = 'all'; st.q = '';
+  st.cat = 'all'; st.brand = 'all';
+  setQuery('');
   $('#q').value = '';
   const qc = $('#qClear');
   if (qc) qc.hidden = true;
@@ -495,17 +550,18 @@ document.addEventListener('click', e => {
     st.cat = b.dataset.k;
     render();
     const on = $('#chips .chip.on');
-    if (on) on.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (on) on.scrollIntoView({ behavior: SMOOTH, inline: 'center', block: 'nearest' });
   }
   else if (a === 'reset') resetFilters();
   else if (a === 'wreset') clearFilter();
-  else if (a === 'wm') setRange(+$('#wRange').value - 1);
-  else if (a === 'wp') setRange(+$('#wRange').value + 1);
-  else if (a === 'wsize') setRange(+b.dataset.w);
+  else if (a === 'wm') previewWeight(+$('#wRange').value - 1);
+  else if (a === 'wp') previewWeight(+$('#wRange').value + 1);
+  else if (a === 'wsize') previewWeight(+b.dataset.w);
   else if (a === 'combo') addCombo(id);
   else if (a === 'quick-w') {
+    clearTimeout(wTimer);
     if (b.dataset.sz) setSize(b.dataset.sz); else clearFilter();
-    if ($('#catalog').getBoundingClientRect().top > 160) $('#catalog').scrollIntoView({ behavior: 'smooth' });
+    if ($('#catalog').getBoundingClientRect().top > 160) $('#catalog').scrollIntoView({ behavior: SMOOTH });
   }
 });
 
@@ -519,7 +575,9 @@ $('#barBtn').addEventListener('click', openCart);
 $('#drClose').addEventListener('click', closeCart);
 scrim.addEventListener('click', closeCart);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && drawer.classList.contains('open')) closeCart();
+  if (!drawer.classList.contains('open')) return;
+  if (e.key === 'Escape') closeCart();
+  else if (e.key === 'Tab') trapTab(e);
 });
 
 $('#form').addEventListener('submit', e => { e.preventDefault(); send(); });
@@ -536,10 +594,11 @@ $('#restoreCart').addEventListener('click', () => {
 });
 document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', syncMode));
 
-$('#wRange').addEventListener('input', wRes);
+$('#wRange').addEventListener('input', e => previewWeight(+e.target.value));
 $('#wApply').addEventListener('click', () => {
+  clearTimeout(wTimer);
   setWeight(+$('#wRange').value);
-  $('#catalog').scrollIntoView({ behavior: 'smooth' });
+  $('#catalog').scrollIntoView({ behavior: SMOOTH });
 });
 
 let searchTimer;
@@ -548,13 +607,13 @@ qInput.addEventListener('input', e => {
   const val = e.target.value;
   if (qClear) qClear.hidden = !val;
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { st.q = norm(val.trim()); render(); }, 160);
+  searchTimer = setTimeout(() => { setQuery(val); render(); }, 160);
 });
 if (qClear) {
   qClear.addEventListener('click', () => {
     qInput.value = '';
     qClear.hidden = true;
-    st.q = '';
+    setQuery('');
     render();
     qInput.focus();
   });
@@ -567,9 +626,9 @@ const dockItems = document.querySelectorAll('.dock-item');
 function setDockActive(key) {
   dockItems.forEach(it => it.classList.toggle('active', it.dataset.dock === key));
 }
-$('#dockCatalog').addEventListener('click', () => { setDockActive('catalog'); $('#catalog').scrollIntoView({ behavior: 'smooth' }); });
-$('#dockCombos').addEventListener('click', () => { setDockActive('combos'); $('#combos').scrollIntoView({ behavior: 'smooth' }); });
-$('#dockSizes').addEventListener('click', () => { setDockActive('sizes'); $('#sizes').scrollIntoView({ behavior: 'smooth' }); });
+$('#dockCatalog').addEventListener('click', () => { setDockActive('catalog'); $('#catalog').scrollIntoView({ behavior: SMOOTH }); });
+$('#dockCombos').addEventListener('click', () => { setDockActive('combos'); $('#combos').scrollIntoView({ behavior: SMOOTH }); });
+$('#dockSizes').addEventListener('click', () => { setDockActive('sizes'); $('#sizes').scrollIntoView({ behavior: SMOOTH }); });
 $('#dockCart').addEventListener('click', openCart);
 
 if ('IntersectionObserver' in window) {
@@ -580,14 +639,15 @@ if ('IntersectionObserver' in window) {
   });
 }
 
-const stickySuper = $('#stickySuper');
+const stickySuper = $('#stickySuper'), hdr = $('#hdr');
 let pinTick = false;
 if (stickySuper) {
   window.addEventListener('scroll', () => {
     if (pinTick) return;
     pinTick = true;
     requestAnimationFrame(() => {
-      stickySuper.classList.toggle('is-pinned', stickySuper.getBoundingClientRect().top <= 60);
+      const bottom = hdr ? hdr.getBoundingClientRect().bottom : 58;
+      stickySuper.classList.toggle('is-pinned', stickySuper.getBoundingClientRect().top <= bottom + 1);
       pinTick = false;
     });
   }, { passive: true });
@@ -607,8 +667,8 @@ function syncForgetBtn() {
 }
 if (forgetBtn) {
   forgetBtn.addEventListener('click', () => {
-    localStorage.removeItem(INFO);
-    localStorage.removeItem(LAST_ORDER_KEY);
+    drop(INFO);
+    drop(LAST_ORDER_KEY);
     $('#fName').value = '';
     $('#fAddr').value = '';
     $('#fNote').value = '';

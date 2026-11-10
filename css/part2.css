@@ -1,0 +1,45 @@
+/* Part 2 overrides. Loaded after style.css; merge into style.css when convenient. */
+html {
+  scroll-padding-top: calc(145px + env(safe-area-inset-top));
+  scrollbar-gutter: stable;
+}
+
+/* Fix typo in style.css: "flex-wrap: gap: 12px" */
+.hero__cta { flex-wrap: wrap; gap: 12px; }
+
+/* Keyboard focus on delivery radios */
+.seg input:focus-visible + span { outline: 3px solid var(--hon-d); outline-offset: 2px; }
+
+/* Drawer handle and height */
+.drawer__handle {
+  flex: none;
+  width: 40px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: 2px;
+  background: #D1D5DB;
+}
+
+/* Cart totals breakdown */
+.tot-rows { display: grid; gap: 4px; font-size: 14px; color: var(--mut); text-align: left; }
+.tot-row { display: flex; justify-content: space-between; gap: 12px; }
+.tot-row b { color: var(--ink); font-weight: 700; }
+
+@media (max-width: 899px) {
+  .drawer { max-height: 92vh; max-height: 92dvh; }
+}
+
+/* Two-row filters on phones: chips on full width, selects below */
+@media (max-width: 599px) {
+  .sticky-super__in { flex-wrap: wrap; row-gap: 6px; }
+  .chips { flex: 1 1 100%; min-width: 0; }
+  .sticky-super__ctl { display: flex; gap: 8px; width: 100%; }
+  .sticky-super__ctl select { flex: 1 1 0; min-width: 0; max-width: none; }
+  #brand { max-width: none; }
+}
+
+/* Desktop: cart is in the header, hide the floating bar */
+@media (min-width: 900px) {
+  .bar { display: none !important; }
+  .drawer__handle { display: none; }
+}
