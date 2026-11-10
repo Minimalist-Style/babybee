@@ -1,998 +1,228 @@
-/**
- * Baby Bee Shemonaikha — Interactive E-Commerce Catalog
- * Phone / WhatsApp: +7 (777) 980-56-39
- */
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Application State
-  const state = {
-    products: [],
-    category: 'all',
-    brand: 'all',
-    search: '',
-    selectedSizes: {}, // productId -> sizeIndex
-    cart: []           // Array of { id, name, brand, image, price, spec, qty }
-  };
-
-  // DOM Elements
-  const productsGrid = document.getElementById('productsGrid');
-  const searchInput = document.getElementById('searchInput');
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  const brandPills = document.querySelectorAll('.brand-pill');
-  
-  // Cart DOM Elements
-  const cartBtn = document.getElementById('cartBtn');
-  const floatingCartBtn = document.getElementById('floatingCartBtn');
-  const cartDrawer = document.getElementById('cartDrawer');
-  const cartBackdrop = document.getElementById('cartBackdrop');
-  const closeCartBtn = document.getElementById('closeCartBtn');
-  const cartItemsList = document.getElementById('cartItemsList');
-  const cartTotalPrice = document.getElementById('cartTotalPrice');
-  const cartCountBadge = document.getElementById('cartCountBadge');
-  const drawerItemsCount = document.getElementById('drawerItemsCount');
-  const floatingBadge = document.getElementById('floatingBadge');
-  const floatingTotal = document.getElementById('floatingTotal');
-  const checkoutWhatsAppBtn = document.getElementById('checkoutWhatsAppBtn');
-
-  // Input Fields in Cart
-  const orderName = document.getElementById('orderName');
-  const orderAddress = document.getElementById('orderAddress');
-  const orderPayment = document.getElementById('orderPayment');
-
-  // Category counts
-  const countAll = document.getElementById('countAll');
-  const countDiapers = document.getElementById('countDiapers');
-  const countCare = document.getElementById('countCare');
-  const countWipes = document.getElementById('countWipes');
-
-  // Load saved cart from localStorage
-  const savedCart = localStorage.getItem('babybee_cart');
-  if (savedCart) {
-    try {
-      state.cart = JSON.parse(savedCart);
-    } catch (e) {
-      console.error('Error parsing cart from storage', e);
-    }
-  }
-
-  // Load saved user info
-  const savedName = localStorage.getItem('babybee_name');
-  if (savedName && orderName) orderName.value = savedName;
-  const savedAddress = localStorage.getItem('babybee_address');
-  if (savedAddress && orderAddress) orderAddress.value = savedAddress;
-
-  // 1. Fetch Products
-  fetch('data/products.json')
-    .then(res => {
-      if (!res.ok) throw new Error('Network response was not ok');
-      return res.json();
-    })
-    .then(data => {
-      state.products = data;
-      // Initialize default selected size (first size) for products that have sizes
-      data.forEach(p => {
-        if (p.sizes && p.sizes.length > 0) {
-          state.selectedSizes[p.id] = 0;
-        }
-      });
-      updateCategoryCounts();
-      renderProducts();
-      updateCartUI();
-    })
-    .catch(err => {
-      console.error('Failed to load products.json', err);
-      productsGrid.innerHTML = `
-        <div class="empty-state">
-          <p>Не удалось загрузить каталог товаров. Пожалуйста, обновите страницу.</p>
-        </div>
-      `;
-    });
-
-  // 2. Format Price Helper
-  function formatPrice(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₸';
-  }
-
-  // 3. Update Category Badge Counts
-  function updateCategoryCounts() {
-    if (!countAll) return;
-    countAll.textContent = state.products.length;
-    countDiapers.textContent = state.products.filter(p => p.category === 'diapers').length;
-    countCare.textContent = state.products.filter(p => p.category === 'care').length;
-    countWipes.textContent = state.products.filter(p => p.category === 'wipes').length;
-  }
-
-  // 4. Render Products
-  function renderProducts() {
-    const filtered = state.products.filter(p => {
-      const matchCat = state.category === 'all' || p.category === state.category;
-      const matchBrand = state.brand === 'all' || p.brand.toLowerCase() === state.brand.toLowerCase();
-      const matchSearch = state.search === '' ||
-        p.name.toLowerCase().includes(state.search) ||
-        p.brand.toLowerCase().includes(state.search) ||
-        (p.description && p.description.toLowerCase().includes(state.search));
-      return matchCat && matchBrand && matchSearch;
-    });
-
-    if (filtered.length === 0) {
-      productsGrid.innerHTML = `
-        <div class="empty-state">
-          <div style="font-size: 40px; margin-bottom: 12px;">🔍</div>
-          <h3>Товары не найдены</h3>
-          <p style="color: var(--ink-500); margin-top: 6px;">Попробуйте выбрать другую категорию или сбросить поисковый запрос</p>
-        </div>
-      `;
-      return;
-    }
-
-    productsGrid.innerHTML = filtered.map(product => {
-      // Sizes logic for diapers
-      let sizeMarkup = '';
-      if (product.sizes && product.sizes.length > 0) {
-        const activeIdx = state.selectedSizes[product.id] || 0;
-        const currentSize = product.sizes[activeIdx];
-        
-        const pills = product.sizes.map((s, idx) => `
-          <button class="size-pill ${idx === activeIdx ? 'active' : ''}" data-product-id="${product.id}" data-size-idx="${idx}">
-            ${s.size}
-          </button>
-        `).join('');
-
-        sizeMarkup = `
-          <div class="size-selector">
-            <span class="size-selector__label">Выберите размер:</span>
-            <div class="size-pills">
-              ${pills}
-            </div>
-            <div class="size-meta-info" id="meta-${product.id}">
-              ${currentSize.weight} • ${currentSize.count} шт
-            </div>
-          </div>
-        `;
-      } else if (product.volume) {
-        sizeMarkup = `<div class="spec-info">Объем: ${product.volume}</div>`;
-      } else if (product.count) {
-        sizeMarkup = `<div class="spec-info">В пачке: ${product.count}</div>`;
-      }
-
-      return `
-        <article class="product-card" id="card-${product.id}">
-          ${product.badge ? `<span class="product-card__badge">${product.badge}</span>` : ''}
-          <div class="product-card__img-wrap">
-            <img src="${product.image}" alt="${product.name}" class="product-card__img" loading="lazy">
-          </div>
-          <div class="product-card__body">
-            <span class="product-card__brand">${product.brand}</span>
-            <h3 class="product-card__title">${product.name}</h3>
-            <p class="product-card__desc">${product.description || ''}</p>
-            ${sizeMarkup}
-            <div class="product-card__footer">
-              <span class="product-card__price">${formatPrice(product.price)}</span>
-              <button class="btn-add-cart" data-add-id="${product.id}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                <span>В корзину</span>
-              </button>
-            </div>
-          </div>
-        </article>
-      `;
-    }).join('');
-
-    // Attach Size Pill Listeners
-    document.querySelectorAll('.size-pill').forEach(pill => {
-      pill.addEventListener('click', (e) => {
-        const prodId = e.currentTarget.dataset.productId;
-        const sizeIdx = parseInt(e.currentTarget.dataset.sizeIdx, 10);
-        state.selectedSizes[prodId] = sizeIdx;
-        
-        // Update DOM for this card only
-        const card = document.getElementById(`card-${prodId}`);
-        if (card) {
-          card.querySelectorAll('.size-pill').forEach((p, idx) => {
-            p.classList.toggle('active', idx === sizeIdx);
-          });
-          const product = state.products.find(p => p.id === prodId);
-          if (product && product.sizes) {
-            const meta = card.querySelector(`#meta-${prodId}`);
-            if (meta) {
-              const current = product.sizes[sizeIdx];
-              meta.textContent = `${current.weight} • ${current.count} шт`;
-            }
-          }
-        }
-      });
-    });
-
-    // Attach Add to Cart Listeners
-    document.querySelectorAll('.btn-add-cart').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const prodId = e.currentTarget.dataset.addId;
-        addToCart(prodId, e.currentTarget);
-      });
-    });
-
-    // Initialize 3D Card Tilt Parallax
-    initProductCardTilt();
-  }
-
-  // 5. Add to Cart Logic
-  function addToCart(productId, buttonElement) {
-    const product = state.products.find(p => p.id === productId);
-    if (!product) return;
-
-    let specText = '';
-    if (product.sizes && product.sizes.length > 0) {
-      const activeIdx = state.selectedSizes[productId] || 0;
-      const sizeObj = product.sizes[activeIdx];
-      specText = `Размер ${sizeObj.size} (${sizeObj.weight}, ${sizeObj.count} шт)`;
-    } else if (product.volume) {
-      specText = product.volume;
-    } else if (product.count) {
-      specText = product.count;
-    }
-
-    // Check if item with this exact spec is already in cart
-    const existingIndex = state.cart.findIndex(item => item.id === product.id && item.spec === specText);
-    if (existingIndex > -1) {
-      state.cart[existingIndex].qty += 1;
-    } else {
-      state.cart.push({
-        id: product.id,
-        name: product.name,
-        brand: product.brand,
-        image: product.image,
-        price: product.price,
-        spec: specText,
-        qty: 1
-      });
-    }
-
-    saveCart();
-    updateCartUI();
-
-    // Tactile Feedback on Button
-    if (buttonElement) {
-      buttonElement.classList.add('added');
-      const originalContent = buttonElement.innerHTML;
-      buttonElement.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        <span>Добавлено!</span>
-      `;
-      setTimeout(() => {
-        buttonElement.classList.remove('added');
-        buttonElement.innerHTML = originalContent;
-      }, 1200);
-    }
-  }
-
-  // 6. Save Cart to LocalStorage
-  function saveCart() {
-    localStorage.setItem('babybee_cart', JSON.stringify(state.cart));
-  }
-
-  // 7. Update Cart UI & Drawers (Enhanced with View Transitions API)
-  function updateCartUI() {
-    const renderCart = () => {
-      const totalItems = state.cart.reduce((sum, item) => sum + item.qty, 0);
-      const totalPrice = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-
-      // Badges & Labels
-      if (cartCountBadge) cartCountBadge.textContent = totalItems;
-      if (drawerItemsCount) drawerItemsCount.textContent = totalItems;
-      if (floatingBadge) floatingBadge.textContent = totalItems;
-      if (floatingTotal) floatingTotal.textContent = formatPrice(totalPrice);
-      if (cartTotalPrice) cartTotalPrice.textContent = formatPrice(totalPrice);
-
-      // Sticky Floating Order Bar Sync
-      const stickyOrderBar = document.getElementById('stickyOrderBar');
-      const stickyBarCount = document.getElementById('stickyBarCount');
-      const stickyBarTotal = document.getElementById('stickyBarTotal');
-      if (stickyBarCount) {
-        stickyBarCount.textContent = `${totalItems} ${totalItems === 1 ? 'товар' : (totalItems < 5 ? 'товара' : 'товаров')}`;
-      }
-      if (stickyBarTotal) {
-        stickyBarTotal.textContent = formatPrice(totalPrice);
-      }
-      if (stickyOrderBar) {
-        if (totalItems > 0) {
-          stickyOrderBar.classList.add('visible');
-        } else {
-          stickyOrderBar.classList.remove('visible');
-        }
-      }
-
-      // Render Items in Drawer
-      if (!cartItemsList) return;
-
-      if (state.cart.length === 0) {
-        cartItemsList.innerHTML = `
-          <div class="empty-cart-msg">
-            <div class="icon-empty">🛒</div>
-            <h4>Ваша корзина пуста</h4>
-            <p>Выберите подгузники или эко-товары из каталога</p>
-          </div>
-        `;
-        if (checkoutWhatsAppBtn) checkoutWhatsAppBtn.disabled = true;
-        return;
-      }
-
-      if (checkoutWhatsAppBtn) checkoutWhatsAppBtn.disabled = false;
-
-      cartItemsList.innerHTML = state.cart.map((item, idx) => `
-        <div class="cart-item">
-          <img src="${item.image}" alt="${item.name}" class="cart-item__img">
-          <div>
-            <div class="cart-item__name">${item.name}</div>
-            <div class="cart-item__spec">${item.spec}</div>
-            <div class="cart-item__price">${formatPrice(item.price)}</div>
-          </div>
-          <div class="cart-item__controls">
-            <button class="qty-btn" data-cart-action="dec" data-idx="${idx}">−</button>
-            <span class="qty-val">${item.qty}</span>
-            <button class="qty-btn" data-cart-action="inc" data-idx="${idx}">+</button>
-          </div>
-        </div>
-      `).join('');
-
-      // Cart control button listeners
-      cartItemsList.querySelectorAll('[data-cart-action]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const action = e.currentTarget.dataset.cartAction;
-          const idx = parseInt(e.currentTarget.dataset.idx, 10);
-          if (action === 'inc') {
-            state.cart[idx].qty += 1;
-          } else if (action === 'dec') {
-            state.cart[idx].qty -= 1;
-            if (state.cart[idx].qty <= 0) {
-              state.cart.splice(idx, 1);
-            }
-          }
-          saveCart();
-          updateCartUI();
-        });
-      });
-    };
-
-    if (document.startViewTransition) {
-      document.startViewTransition(renderCart);
-    } else {
-      renderCart();
-    }
-  }
-
-  // 8. Drawer Open / Close Logic (with View Transitions)
-  function openCart() {
-    const doOpen = () => {
-      cartDrawer.classList.add('open');
-      cartBackdrop.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    };
-    if (document.startViewTransition) {
-      document.startViewTransition(doOpen);
-    } else {
-      doOpen();
-    }
-  }
-
-  function closeCart() {
-    const doClose = () => {
-      cartDrawer.classList.remove('open');
-      cartBackdrop.classList.remove('open');
-      document.body.style.overflow = '';
-    };
-    if (document.startViewTransition) {
-      document.startViewTransition(doClose);
-    } else {
-      doClose();
-    }
-  }
-
-  if (cartBtn) cartBtn.addEventListener('click', openCart);
-  if (floatingCartBtn) floatingCartBtn.addEventListener('click', openCart);
-  if (closeCartBtn) closeCartBtn.addEventListener('click', closeCart);
-  if (cartBackdrop) cartBackdrop.addEventListener('click', closeCart);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && cartDrawer.classList.contains('open')) {
-      closeCart();
-    }
-  });
-
-  // 9. Filters Handling
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.category = btn.dataset.category;
-      renderProducts();
-    });
-  });
-
-  brandPills.forEach(pill => {
-    pill.addEventListener('click', () => {
-      brandPills.forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      state.brand = pill.dataset.brand;
-      renderProducts();
-    });
-  });
-
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      state.search = e.target.value.trim().toLowerCase();
-      renderProducts();
-    });
-  }
-
-  // Initialize Celebration Modal & WOW effects
-  const celebrationModalController = initCelebrationModal();
-  initHeroMeshCanvas();
-  initConfettiSystem();
-
-  // 10. WhatsApp Checkout Link Generator with Celebratory Modal
-  if (checkoutWhatsAppBtn) {
-    checkoutWhatsAppBtn.addEventListener('click', () => {
-      if (state.cart.length === 0) {
-        alert('Пожалуйста, добавьте товары в корзину');
-        return;
-      }
-
-      const clientName = (orderName ? orderName.value.trim() : '') || 'Не указано';
-      const clientAddress = (orderAddress ? orderAddress.value.trim() : '') || 'г. Шемонаиха (уточню в чате)';
-      const paymentMethod = (orderPayment ? orderPayment.value : 'Kaspi QR / Kaspi Gold');
-
-      // Save client details for next time
-      if (orderName) localStorage.setItem('babybee_name', orderName.value);
-      if (orderAddress) localStorage.setItem('babybee_address', orderAddress.value);
-
-      // Generate Unique Order Code
-      const orderCode = `#BB-${Math.floor(10000 + Math.random() * 90000)}`;
-
-      // Build Message Text
-      let text = `Здравствуйте! Хочу сделать заказ в Baby Bee (г. Шемонаиха) 🐝:\n`;
-      text += `📦 *Заказ:* ${orderCode}\n\n`;
-      text += `🛒 *Состав заказа:*\n`;
-
-      let total = 0;
-      state.cart.forEach((item, index) => {
-        const itemSum = item.price * item.qty;
-        total += itemSum;
-        text += `${index + 1}. *${item.name}*\n   [${item.spec}] × ${item.qty} шт = ${formatPrice(itemSum)}\n`;
-      });
-
-      const silentDeliveryCheck = document.getElementById('silentDeliveryCheck');
-      const isSilent = silentDeliveryCheck ? silentDeliveryCheck.checked : true;
-
-      text += `\n💰 *Итого к оплате:* ${formatPrice(total)}\n`;
-      text += `📍 *Адрес доставки:* ${clientAddress}\n`;
-      text += `💳 *Оплата:* ${paymentMethod}\n`;
-      text += `🤫 *Режим доставки:* ${isSilent ? 'Тихая доставка (не звонить в дверь, написать в WhatsApp)' : 'Обычная доставка'}\n`;
-      text += `👤 *Имя:* ${clientName}\n\n`;
-      text += `Пожалуйста, подтвердите наличие и время доставки! 🙏`;
-
-      const encodedText = encodeURIComponent(text);
-      const waUrl = `https://wa.me/77779805639?text=${encodedText}`;
-
-      // 1. Close cart drawer
-      closeCart();
-
-      // 2. Open celebratory modal & fire confetti
-      if (celebrationModalController) {
-        celebrationModalController.open(orderCode, total, clientAddress, waUrl);
-      }
-    });
-  }
-
-  // =========================================================================
-  // 11. Hero Interactive Canvas Wave Mesh
-  // =========================================================================
-  function initHeroMeshCanvas() {
-    const canvas = document.getElementById('heroMeshCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const heroSection = document.querySelector('.hero');
-    if (!heroSection) return;
-
-    let width = 0;
-    let height = 0;
-    let dpr = window.devicePixelRatio || 1;
-    let cols = 12;
-    let rows = 7;
-    let points = [];
-    let mouse = { x: -1000, y: -1000, active: false };
-    let animFrame = null;
-    let isVisible = true;
-    let time = 0;
-
-    function resize() {
-      const rect = heroSection.getBoundingClientRect();
-      width = rect.width;
-      height = rect.height;
-      if (width === 0 || height === 0) return;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      // Create grid of points
-      points = [];
-      const colStep = width / (cols - 1);
-      const rowStep = height / (rows - 1);
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const originX = c * colStep;
-          const originY = r * rowStep;
-          points.push({
-            originX,
-            originY,
-            x: originX,
-            y: originY,
-            vx: 0,
-            vy: 0,
-            col: c,
-            row: r
-          });
-        }
-      }
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-
-    heroSection.addEventListener('mousemove', (e) => {
-      const rect = heroSection.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
-      mouse.active = true;
-    });
-
-    heroSection.addEventListener('mouseleave', () => {
-      mouse.active = false;
-      mouse.x = -1000;
-      mouse.y = -1000;
-    });
-
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          isVisible = entry.isIntersecting;
-          if (isVisible && !animFrame) {
-            animFrame = requestAnimationFrame(renderMesh);
-          }
-        });
-      }, { threshold: 0.05 });
-      observer.observe(heroSection);
-    }
-
-    function renderMesh() {
-      if (!isVisible) {
-        animFrame = null;
-        return;
-      }
-
-      ctx.clearRect(0, 0, width, height);
-      time += 0.02;
-
-      // Update points with wave + mouse repulsion physics
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-        const waveX = Math.sin(time + p.row * 0.45) * 4;
-        const waveY = Math.cos(time + p.col * 0.45) * 6;
-        const targetX = p.originX + waveX;
-        const targetY = p.originY + waveY;
-
-        if (mouse.active) {
-          const dx = mouse.x - p.x;
-          const dy = mouse.y - p.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 180;
-          if (dist < maxDist && dist > 0) {
-            const force = (1 - dist / maxDist) * 35;
-            p.vx -= (dx / dist) * force * 0.2;
-            p.vy -= (dy / dist) * force * 0.2;
-          }
-        }
-
-        p.vx += (targetX - p.x) * 0.08;
-        p.vy += (targetY - p.y) * 0.08;
-        p.vx *= 0.85;
-        p.vy *= 0.85;
-        p.x += p.vx;
-        p.y += p.vy;
-      }
-
-      // Draw horizontal lines
-      for (let r = 0; r < rows; r++) {
-        ctx.beginPath();
-        for (let c = 0; c < cols; c++) {
-          const p = points[r * cols + c];
-          if (c === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        }
-        ctx.strokeStyle = 'rgba(245, 166, 35, 0.12)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-
-      // Draw vertical lines
-      for (let c = 0; c < cols; c++) {
-        ctx.beginPath();
-        for (let r = 0; r < rows; r++) {
-          const p = points[r * cols + c];
-          if (r === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        }
-        ctx.strokeStyle = 'rgba(13, 162, 231, 0.07)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-
-      // Draw subtle glowing honey dots
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(245, 166, 35, 0.35)';
-        ctx.fill();
-      }
-
-      animFrame = requestAnimationFrame(renderMesh);
-    }
-
-    animFrame = requestAnimationFrame(renderMesh);
-  }
-
-  // =========================================================================
-  // 12. 3D Card Tilt & Specular Parallax
-  // =========================================================================
-  function initProductCardTilt() {
-    if (window.matchMedia('(pointer: coarse)').matches) return;
-
-    const cards = document.querySelectorAll('.product-card');
-    cards.forEach(card => {
-      if (card.dataset.tiltInitialized) return;
-      card.dataset.tiltInitialized = 'true';
-
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const rotateX = -((y - centerY) / centerY) * 6.5;
-        const rotateY = ((x - centerX) / centerX) * 6.5;
-
-        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-6px) scale3d(1.02, 1.02, 1.02)`;
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
-      });
-
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale3d(1, 1, 1)';
-        card.style.removeProperty('--mouse-x');
-        card.style.removeProperty('--mouse-y');
-      });
-    });
-  }
-
-  // =========================================================================
-  // 13. Confetti Cannon Particle System
-  // =========================================================================
-  function initConfettiSystem() {
-    const canvas = document.getElementById('confettiCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    let animId = null;
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    const colors = ['#F59E0B', '#FBBF24', '#10B981', '#34D399', '#FDE68A', '#0284C7', '#FFFFFF', '#EC4899'];
-
-    fireCelebrationConfetti = function() {
-      resize();
-      particles = [];
-      const count = 90;
-      const startX = window.innerWidth / 2;
-      const startY = window.innerHeight * 0.45;
-
-      for (let i = 0; i < count; i++) {
-        const angle = Math.PI * 2 * Math.random();
-        const speed = 4 + Math.random() * 12;
-        particles.push({
-          x: startX,
-          y: startY,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          size: 6 + Math.random() * 8,
-          rotation: Math.random() * 360,
-          rotationSpeed: (Math.random() - 0.5) * 12,
-          gravity: 0.32,
-          drag: 0.98,
-          opacity: 1,
-          shape: Math.random() > 0.4 ? 'rect' : 'circle'
-        });
-      }
-
-      if (!animId) {
-        animId = requestAnimationFrame(updateConfetti);
-      }
-    };
-
-    function updateConfetti() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      let aliveCount = 0;
-
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        p.vx *= p.drag;
-        p.vy *= p.drag;
-        p.vy += p.gravity;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rotation += p.rotationSpeed;
-        p.opacity -= 0.007;
-
-        if (p.opacity > 0 && p.y < canvas.height + 20) {
-          aliveCount++;
-          ctx.save();
-          ctx.globalAlpha = Math.max(0, p.opacity);
-          ctx.translate(p.x, p.y);
-          ctx.rotate((p.rotation * Math.PI) / 180);
-          ctx.fillStyle = p.color;
-
-          if (p.shape === 'rect') {
-            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-          } else {
-            ctx.beginPath();
-            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.restore();
-        }
-      }
-
-      if (aliveCount > 0) {
-        animId = requestAnimationFrame(updateConfetti);
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        animId = null;
-      }
-    }
-  }
-
-  // =========================================================================
-  // 14. Stitch-Inspired Celebration Modal Logic
-  // =========================================================================
-  function initCelebrationModal() {
-    const celebrationBackdrop = document.getElementById('celebrationBackdrop');
-    const closeCelebrationBtn = document.getElementById('closeCelebrationBtn');
-    const continueShoppingBtn = document.getElementById('continueShoppingBtn');
-    const copyCelebrationOrderBtn = document.getElementById('copyCelebrationOrderBtn');
-    const celebrationOrderId = document.getElementById('celebrationOrderId');
-    const celebrationAddressVal = document.getElementById('celebrationAddressVal');
-    const celebrationTotalVal = document.getElementById('celebrationTotalVal');
-    const celebrationWhatsAppLink = document.getElementById('celebrationWhatsAppLink');
-
-    if (!celebrationBackdrop) return null;
-
-    function openCelebrationModal(orderCode, total, address, waUrl) {
-      if (celebrationOrderId) celebrationOrderId.textContent = orderCode;
-      if (celebrationTotalVal) celebrationTotalVal.textContent = formatPrice(total);
-      if (celebrationAddressVal) celebrationAddressVal.textContent = address;
-      if (celebrationWhatsAppLink) celebrationWhatsAppLink.href = waUrl;
-
-      celebrationBackdrop.classList.add('open');
-      celebrationBackdrop.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-
-      // Launch golden confetti celebration!
-      if (typeof fireCelebrationConfetti === 'function') {
-        fireCelebrationConfetti();
-      }
-    }
-
-    function closeCelebrationModal() {
-      celebrationBackdrop.classList.remove('open');
-      celebrationBackdrop.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    }
-
-    if (closeCelebrationBtn) closeCelebrationBtn.addEventListener('click', closeCelebrationModal);
-    if (continueShoppingBtn) continueShoppingBtn.addEventListener('click', closeCelebrationModal);
-    celebrationBackdrop.addEventListener('click', (e) => {
-      if (e.target === celebrationBackdrop) closeCelebrationModal();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && celebrationBackdrop.classList.contains('open')) {
-        closeCelebrationModal();
-      }
-    });
-
-    if (copyCelebrationOrderBtn && celebrationOrderId) {
-      copyCelebrationOrderBtn.addEventListener('click', () => {
-        const text = celebrationOrderId.textContent;
-        navigator.clipboard.writeText(text).then(() => {
-          const originalHTML = copyCelebrationOrderBtn.innerHTML;
-          copyCelebrationOrderBtn.innerHTML = `<span style="color:#10B981; font-weight:800; font-size:12px;">✓</span>`;
-          setTimeout(() => {
-            copyCelebrationOrderBtn.innerHTML = originalHTML;
-          }, 2000);
-        });
-      });
-    }
-
-    return { open: openCelebrationModal, close: closeCelebrationModal };
-  }
-
-  // 11. Stitch Storefront: Smart Size Finder by Baby Weight (Argon Matrix Enhanced)
-  function initSmartSizeFinder() {
-    const weightSlider = document.getElementById('weightSlider');
-    const currentWeightVal = document.getElementById('currentWeightVal');
-    const recSizeName = document.getElementById('recSizeName');
-    const recSizeDesc = document.getElementById('recSizeDesc');
-    const recAccuracyBadge = document.getElementById('recAccuracyBadge');
-    const recSubnote = document.getElementById('recSubnote');
-    const chubbyBuildCheckbox = document.getElementById('chubbyBuildCheckbox');
-    const applySizeFilterBtn = document.getElementById('applySizeFilterBtn');
-    const pills = document.querySelectorAll('#weightPillsContainer .weight-pill');
-
-    if (!weightSlider || !currentWeightVal) return;
-
-    const BABYBEE_SIZE_MATRIX = [
-      { size: 'Размер 1 (NB / 2–5 кг)', min: 2.0, max: 5.0, borderStart: 4.3, nextSize: 'Размер 2 (Mini / 4–8 кг)' },
-      { size: 'Размер 2 (Mini / 4–8 кг)', min: 4.0, max: 8.0, borderStart: 6.8, nextSize: 'Размер 3 (Midi / 6–11 кг)' },
-      { size: 'Размер 3 (Midi / 6–11 кг)', min: 6.0, max: 11.0, borderStart: 9.5, nextSize: 'Размер 4 (Maxi / 9–14 кг)' },
-      { size: 'Размер 4 (Maxi / 9–14 кг)', min: 9.0, max: 14.0, borderStart: 12.5, nextSize: 'Размер 5 (Junior / 12–18 кг)' },
-      { size: 'Размер 5 (Junior / 12–18 кг)', min: 12.0, max: 18.0, borderStart: 15.5, nextSize: 'Размер 6/7 (Extra / 15–25 кг)' },
-      { size: 'Размер 6/7 (Extra / 15–25 кг)', min: 15.0, max: 30.0, borderStart: 25.0, nextSize: 'Размер 7 (XXXL)' }
-    ];
-
-    function updateRecommendation(weight) {
-      const isChubby = chubbyBuildCheckbox && chubbyBuildCheckbox.checked;
-      const effectiveWeight = isChubby ? weight + 0.8 : weight;
-      currentWeightVal.textContent = weight.toFixed(1);
-
-      const match = BABYBEE_SIZE_MATRIX.find(s => effectiveWeight >= s.min && effectiveWeight <= s.max) 
-                    || BABYBEE_SIZE_MATRIX[BABYBEE_SIZE_MATRIX.length - 1];
-      
-      const isBorderline = effectiveWeight >= match.borderStart;
-      const recommended = isBorderline ? match.nextSize : match.size;
-
-      if (recSizeName) recSizeName.textContent = recommended;
-
-      if (recAccuracyBadge) {
-        recAccuracyBadge.textContent = isBorderline ? 'Советуем на вырост' : '99% точность посадки';
-        recAccuracyBadge.style.background = isBorderline ? '#D97706' : '#16A34A';
-      }
-
-      if (recSizeDesc) {
-        if (isBorderline) {
-          recSizeDesc.textContent = `Малыш близко к границе размера (${weight.toFixed(1)} кг${isChubby ? ' + плотное телосложение' : ''}). Рекомендуем ${match.nextSize}, чтобы эластичный поясок не сдавливал животик и пачки хватило на дольше.`;
-        } else {
-          recSizeDesc.textContent = `Идеальная анатомическая посадка для веса ${weight.toFixed(1)} кг. Шелковистый дышащий слой и японский гель защищают до 12 часов без опрелостей.`;
-        }
-      }
-
-      if (recSubnote) {
-        recSubnote.textContent = '🛡️ Если пачка не подойдёт — бесплатно обменяем закрытую упаковку прямо у вашей двери в Шемонаихе.';
-      }
-
-      // Update active pill
-      pills.forEach(pill => {
-        const pillWeight = parseFloat(pill.getAttribute('data-weight'));
-        if (Math.abs(pillWeight - weight) < 1.5) {
-          pill.classList.add('active');
-        } else {
-          pill.classList.remove('active');
-        }
-      });
-    }
-
-    weightSlider.addEventListener('input', (e) => {
-      updateRecommendation(parseFloat(e.target.value));
-    });
-
-    if (chubbyBuildCheckbox) {
-      chubbyBuildCheckbox.addEventListener('change', () => {
-        updateRecommendation(parseFloat(weightSlider.value));
-      });
-    }
-
-    pills.forEach(pill => {
-      pill.addEventListener('click', () => {
-        const val = parseFloat(pill.getAttribute('data-weight'));
-        weightSlider.value = val;
-        updateRecommendation(val);
-      });
-    });
-
-    if (applySizeFilterBtn) {
-      applySizeFilterBtn.addEventListener('click', () => {
-        state.category = 'diapers';
-        filterBtns.forEach(btn => {
-          if (btn.getAttribute('data-category') === 'diapers') {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        });
-        renderProducts();
-
-        const catalogEl = document.getElementById('catalog');
-        if (catalogEl) {
-          catalogEl.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-    }
-
-    // Initial run
-    updateRecommendation(parseFloat(weightSlider.value || 7.5));
-  }
-
-  // 12. Stitch Storefront: Value Bundles / Combos
-  function initCombosSection() {
-    const addComboBtns = document.querySelectorAll('.btn--add-combo');
-    addComboBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-combo-id');
-        const name = btn.getAttribute('data-combo-name');
-        const price = parseInt(btn.getAttribute('data-combo-price'), 10);
-        const image = btn.getAttribute('data-combo-img');
-
-        const existing = state.cart.find(i => i.id === id);
-        if (existing) {
-          existing.qty += 1;
-        } else {
-          state.cart.push({
-            id: id,
-            name: name,
-            brand: 'Baby Bee Набор',
-            image: image,
-            price: price,
-            spec: 'Выгодный комплект (акция)',
-            qty: 1
-          });
-        }
-
-        saveCart();
-        updateCartUI();
-
-        // Tactile feedback
-        const origHTML = btn.innerHTML;
-        btn.innerHTML = `<span>✓ Добавлено!</span>`;
-        btn.style.background = '#10B981';
-        btn.style.color = '#FFFFFF';
-        setTimeout(() => {
-          btn.innerHTML = origHTML;
-          btn.style.background = '';
-          btn.style.color = '';
-        }, 1500);
-      });
-    });
-  }
-
-  // Sticky Bar Checkout Button Trigger
-  const stickyCheckoutBtn = document.getElementById('stickyCheckoutBtn');
-  if (stickyCheckoutBtn && cartDrawer && cartBackdrop) {
-    stickyCheckoutBtn.addEventListener('click', () => {
-      cartDrawer.classList.add('open');
-      cartBackdrop.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    });
-  }
-
-  // Initialize new storefront modules
-  initSmartSizeFinder();
-  initCombosSection();
+(() => {
+'use strict';
+const WA = '77779805639', KEY = 'bb_cart_v2', INFO = 'bb_info_v1';
+const CATS = [['all', 'Все товары'], ['pants', 'Трусики'], ['diapers', 'Подгузники'], ['wipes', 'Влажные салфетки'], ['care', 'Дом и уход']];
+const TABLE = [['NB', 2, 5], ['S', 4, 8], ['M', 6, 11], ['L', 9, 14], ['XL', 12, 18], ['XXL', 15, 22], ['XXXL', 20, 30]];
+const $ = (s, r = document) => r.querySelector(s);
+const fmt = n => n.toLocaleString('ru-RU') + ' ₸';
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ESC[c]);
+const clean = s => String(s || '').replace(/\p{Extended_Pictographic}|\p{Regional_Indicator}|\uFE0F|\u200D/gu, '').trim();
+const range = s => s.weight.replace(' кг', '').split('–').map(Number);
+const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+const st = { products: [], map: {}, cat: 'all', brand: 'all', q: '', sort: 'pop', w: null, sel: {}, cart: load(KEY, []), wa: '' };
+if (!Array.isArray(st.cart)) st.cart = [];
+
+const grid = $('#grid');
+
+function pick(p, w) {
+  if (w == null || !p.sizes) return 0;
+  let best = -1, bm = -1;
+  p.sizes.forEach((s, i) => { const [a, z] = range(s); if (w >= a && w <= z && a > bm) { bm = a; best = i; } });
+  return best < 0 ? 0 : best;
+}
+const idx = p => (st.sel[p.id] != null ? st.sel[p.id] : pick(p, st.w));
+const qty = (id, si) => { const l = st.cart.find(x => x.id === id && x.si === si); return l ? l.qty : 0; };
+const spec = (p, i) => p.sizes ? p.sizes[i].size + ' · ' + p.sizes[i].weight + ' · ' + p.sizes[i].count + ' шт' : (p.volume || p.count || '');
+
+function cardHTML(p) {
+  const i = idx(p), q = qty(p.id, i), tag = clean(p.badge);
+  const sizes = p.sizes
+    ? `<div class='sz' role='group' aria-label='Размер'>${p.sizes.map((s, k) => `<button type='button' class='sz__b${k === i ? ' on' : ''}' data-act='size' data-id='${esc(p.id)}' data-i='${k}' aria-pressed='${k === i}'>${esc(s.size.split(' ')[0])}</button>`).join('')}</div><p class='meta'>${esc(spec(p, i))}</p>`
+    : `<p class='meta'>${esc(p.volume || p.count || '')}</p>`;
+  const action = q
+    ? `<div class='step'><button type='button' data-act='dec' data-id='${esc(p.id)}' data-i='${i}' aria-label='Убавить'>−</button><span>${q}</span><button type='button' data-act='inc' data-id='${esc(p.id)}' data-i='${i}' aria-label='Добавить ещё'>+</button></div>`
+    : `<button type='button' class='btn btn--p add' data-act='add' data-id='${esc(p.id)}' data-i='${i}'>В корзину</button>`;
+  return `<article class='card' data-card='${esc(p.id)}'><div class='card__img'>${tag ? `<span class='card__tag'>${esc(tag)}</span>` : ''}<img src='${esc(p.image)}' alt='${esc(p.name)}' width='400' height='400' loading='lazy' decoding='async'></div><div class='card__b'><span class='card__br'>${esc(p.brand)}</span><h3 class='card__n'>${esc(p.name)}</h3><p class='card__d'>${esc(p.description || '')}</p>${sizes}<div class='card__f'><span class='price'>${fmt(p.price)}</span>${action}</div></div></article>`;
+}
+
+function filtered() {
+  const q = st.q;
+  let l = st.products.filter(p =>
+    (st.cat === 'all' || p.category === st.cat) &&
+    (st.brand === 'all' || p.brand === st.brand) &&
+    (!q || (p.name + ' ' + p.brand + ' ' + (p.description || '')).toLowerCase().includes(q)));
+  if (st.sort === 'asc') l = l.slice().sort((a, b) => a.price - b.price);
+  if (st.sort === 'desc') l = l.slice().sort((a, b) => b.price - a.price);
+  return l;
+}
+
+function render() {
+  const l = filtered();
+  $('#resCount').textContent = l.length ? 'Найдено: ' + l.length : '';
+  grid.innerHTML = l.length ? l.map(cardHTML).join('') : `<div class='empty'><h3>Ничего не нашли</h3><p>Попробуйте другой запрос или категорию.</p><button class='btn btn--g' type='button' data-act='reset'>Сбросить фильтры</button></div>`;
+  renderChips();
+}
+
+function renderChips() {
+  $('#chips').innerHTML = CATS.map(([k, n]) => {
+    const c = k === 'all' ? st.products.length : st.products.filter(p => p.category === k).length;
+    return `<button type='button' class='chip${st.cat === k ? ' on' : ''}' role='tab' aria-selected='${st.cat === k}' data-act='cat' data-k='${k}'>${n}<i>${c}</i></button>`;
+  }).join('');
+}
+
+function refreshCard(id) {
+  const el = grid.querySelector(`[data-card='${CSS.escape(id)}']`);
+  const p = st.map[id];
+  if (el && p) el.outerHTML = cardHTML(p);
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+function change(id, si, d) {
+  const p = st.map[id]; if (!p) return;
+  let l = st.cart.find(x => x.id === id && x.si === si);
+  if (!l && d > 0) { l = { id, si, qty: 0 }; st.cart.push(l); }
+  if (!l) return;
+  l.qty += d;
+  if (l.qty <= 0) st.cart = st.cart.filter(x => x !== l);
+  store(KEY, st.cart);
+  refreshCard(id);
+  cartUI();
+  if (d > 0 && l.qty === 1) toast('Добавлено в корзину');
+}
+
+function lines() {
+  return st.cart.map(l => { const p = st.map[l.id]; return p ? { l, p, sum: p.price * l.qty } : null; }).filter(Boolean);
+}
+const total = () => lines().reduce((s, x) => s + x.sum, 0);
+const count = () => lines().reduce((s, x) => s + x.l.qty, 0);
+const plural = n => n % 10 === 1 && n % 100 !== 11 ? 'товар' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'товара' : 'товаров');
+
+function cartUI() {
+  const ls = lines(), n = count(), t = total();
+  const badge = $('#cartN');
+  badge.hidden = !n; badge.textContent = n;
+  $('#barTotal').textContent = fmt(t);
+  $('#barCount').textContent = n + ' ' + plural(n);
+  $('#bar').classList.toggle('on', n > 0);
+  document.body.classList.toggle('has-bar', n > 0);
+  $('#total').textContent = fmt(t);
+  $('#send').disabled = !n;
+  $('#form').hidden = !n;
+  $('#items').innerHTML = n ? ls.map(({ l, p, sum }) => `<div class='ci'><img src='${esc(p.image)}' alt='' loading='lazy'><div><div class='ci__n'>${esc(p.name)}</div><div class='ci__s'>${esc(spec(p, l.si))}</div></div><div class='ci__r'><div class='step'><button type='button' data-act='dec' data-id='${esc(p.id)}' data-i='${l.si}' aria-label='Убавить'>−</button><span>${l.qty}</span><button type='button' data-act='inc' data-id='${esc(p.id)}' data-i='${l.si}' aria-label='Добавить ещё'>+</button></div><b>${fmt(sum)}</b></div></div>`).join('') : `<div class='cempty'><h3>Корзина пуста</h3><p>Добавьте подгузники или товары для дома из каталога.</p></div>`;
+}
+
+const drawer = $('#drawer'), scrim = $('#scrim');
+function openCart() {
+  drawer.classList.remove('is-done'); $('#done').hidden = true;
+  scrim.hidden = false; requestAnimationFrame(() => scrim.classList.add('on'));
+  drawer.classList.add('open'); drawer.setAttribute('aria-hidden', 'false');
+  document.documentElement.classList.add('lock');
+  setTimeout(() => $('#drClose').focus(), 50);
+}
+function closeCart() {
+  drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true');
+  scrim.classList.remove('on'); setTimeout(() => { scrim.hidden = true; }, 250);
+  document.documentElement.classList.remove('lock');
+}
+
+function mode() { const r = document.querySelector('input[name=mode]:checked'); return r ? r.value : 'Доставка курьером'; }
+function syncMode() {
+  const pick = mode() === 'Самовывоз';
+  $('#addrWrap').hidden = pick;
+}
+
+function send() {
+  const pickup = mode() === 'Самовывоз';
+  const name = $('#fName').value.trim(), addr = $('#fAddr').value.trim(), note = $('#fNote').value.trim();
+  if (!pickup && !addr) { $('#addrErr').hidden = false; $('#fAddr').focus(); return; }
+  $('#addrErr').hidden = true;
+  store(INFO, { name, addr, pay: $('#fPay').value });
+  const code = 'BB-' + Date.now().toString(36).slice(-5).toUpperCase();
+  const ls = lines();
+  const msg = [
+    'Здравствуйте! Хочу сделать заказ в Baby Bee.',
+    'Заказ: #' + code, '',
+    'Состав заказа:',
+    ...ls.map(({ l, p, sum }, i) => (i + 1) + '. ' + p.name + '\n   ' + spec(p, l.si) + ' × ' + l.qty + ' = ' + fmt(sum)),
+    '',
+    'Итого: ' + fmt(total()),
+    'Получение: ' + mode(),
+    pickup ? '' : 'Адрес: ' + addr,
+    'Оплата: ' + $('#fPay').value,
+    'Имя: ' + (name || 'не указано'),
+    note ? 'Комментарий: ' + note : ''
+  ].filter((x, i, a) => x !== '' || (a[i - 1] !== '' && i < a.length - 1)).join('\n');
+  st.wa = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
+  $('#doneT').textContent = 'Заказ #' + code + ' сформирован';
+  $('#doneWa').href = st.wa;
+  drawer.classList.add('is-done'); $('#done').hidden = false;
+  window.open(st.wa, '_blank', 'noopener');
+}
+
+function wRes() {
+  const w = +$('#wRange').value;
+  $('#wOut').textContent = w + ' кг';
+  const r = TABLE.filter(([, a, z]) => w >= a && w <= z).map(([n]) => n);
+  $('#wRes').innerHTML = r.length ? r.map(n => `<span>${n}</span>`).join('') + '<em>ориентировочно, зависит от бренда</em>' : '<em>Для такого веса уточните размер в WhatsApp</em>';
+}
+
+function setWeight(w) {
+  st.w = w; st.sel = {};
+  const tag = $('#wTag');
+  tag.hidden = w == null;
+  if (w != null) tag.innerHTML = `<span>Размеры подобраны для ${w} кг</span><button type='button' data-act='wreset'>Сбросить</button>`;
+  render();
+}
+
+function resetFilters() {
+  st.cat = 'all'; st.brand = 'all'; st.q = '';
+  $('#q').value = ''; $('#brand').value = 'all';
+  render();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, id = b.dataset.id, i = +b.dataset.i;
+  if (a === 'add' || a === 'inc') change(id, i, 1);
+  else if (a === 'dec') change(id, i, -1);
+  else if (a === 'size') { st.sel[id] = i; refreshCard(id); }
+  else if (a === 'cat') { st.cat = b.dataset.k; render(); }
+  else if (a === 'reset') resetFilters();
+  else if (a === 'wreset') setWeight(null);
 });
+$('#cartBtn').addEventListener('click', openCart);
+$('#barBtn').addEventListener('click', openCart);
+$('#drClose').addEventListener('click', closeCart);
+scrim.addEventListener('click', closeCart);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) closeCart(); });
+$('#send').addEventListener('click', send);
+$('#newOrder').addEventListener('click', () => { st.cart = []; store(KEY, st.cart); cartUI(); render(); closeCart(); });
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', syncMode));
+$('#wRange').addEventListener('input', wRes);
+$('#wApply').addEventListener('click', () => { setWeight(+$('#wRange').value); $('#catalog').scrollIntoView({ behavior: 'smooth' }); });
+let timer;
+$('#q').addEventListener('input', e => { clearTimeout(timer); timer = setTimeout(() => { st.q = e.target.value.trim().toLowerCase(); render(); }, 180); });
+$('#brand').addEventListener('change', e => { st.brand = e.target.value; render(); });
+$('#sort').addEventListener('change', e => { st.sort = e.target.value; render(); });
+
+const info = load(INFO, {});
+if (info.name) $('#fName').value = info.name;
+if (info.addr) $('#fAddr').value = info.addr;
+if (info.pay) $('#fPay').value = info.pay;
+wRes(); syncMode(); cartUI();
+grid.innerHTML = Array.from({ length: 8 }, () => "<div class='sk'></div>").join('');
+
+function init() {
+  fetch('data/products.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(data => {
+    st.products = data;
+    data.forEach(p => { st.map[p.id] = p; });
+    st.cart = st.cart.filter(l => st.map[l.id] && (!st.map[l.id].sizes || st.map[l.id].sizes[l.si]));
+    const brands = [...new Set(data.map(p => p.brand))].sort((a, b) => a.localeCompare(b, 'ru'));
+    $('#brand').innerHTML = "<option value='all'>Все бренды</option>" + brands.map(b => `<option value='${esc(b)}'>${esc(b)}</option>`).join('');
+    $('#heroCount').textContent = data.length + '+';
+    render(); cartUI();
+  }).catch(() => {
+    grid.innerHTML = `<div class='empty'><h3>Не удалось загрузить каталог</h3><p>Проверьте интернет и попробуйте снова.</p><button class='btn btn--p' type='button' id='retry'>Повторить</button></div>`;
+    $('#retry').addEventListener('click', init);
+  });
+}
+init();
+})();
