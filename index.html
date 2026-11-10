@@ -4,11 +4,11 @@
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>
 <title>Baby Bee — подгузники и товары для дома с доставкой в Шемонаихе</title>
-<meta name='description' content='Baby Bee: подгузники, трусики, влажные салфетки и товары для дома. Доставка по Шемонаихе, оплата Kaspi, Halyk или наличными. Заказ в WhatsApp за минуту.'>
+<meta name='description' content='Baby Bee: трусики, подгузники, влажные салфетки и бытовая эко-химия. Экспресс-доставка по Шемонаихе за ~40 мин. Бесплатно от 8 000 ₸. Заказ в WhatsApp без регистрации.'>
 <meta name='theme-color' content='#FFFBF3'>
 <meta property='og:type' content='website'>
 <meta property='og:title' content='Baby Bee — доставка подгузников в Шемонаихе'>
-<meta property='og:description' content='Подгузники, салфетки и товары для дома с доставкой до двери. Заказ в WhatsApp.'>
+<meta property='og:description' content='Трусики, подгузники и товары для дома с быстрой доставкой до двери. Заказ в WhatsApp за минуту.'>
 <meta property='og:image' content='https://minimalist-style.github.io/babybee/images/mascot.png'>
 <link rel='icon' href='images/logo.jpg'>
 <link rel='preconnect' href='https://fonts.googleapis.com'>
@@ -19,91 +19,342 @@
 </head>
 <body>
 <a class='skip' href='#catalog'>К каталогу</a>
-<header class='hdr'>
-<div class='wrap hdr__in'>
-<a class='brand' href='#top'><img src='images/logo.jpg' alt='' width='40' height='40'><span class='brand__t'>Baby Bee<small>Шемонаиха</small></span></a>
-<nav class='nav' aria-label='Разделы'><a href='#catalog'>Каталог</a><a href='#combos'>Наборы</a><a href='#sizes'>Подбор размера</a><a href='#how'>Как заказать</a><a href='#contacts'>Контакты</a></nav>
-<button class='cartbtn' id='cartBtn' type='button' aria-label='Открыть корзину'><svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M6 7h12l-1 12H7L6 7z'/><path d='M9 7a3 3 0 0 1 6 0'/></svg><span class='cartbtn__n' id='cartN' hidden>0</span></button>
-</div>
+
+<header class='hdr' id='hdr'>
+  <div class='wrap hdr__in'>
+    <a class='brand' href='#top'>
+      <img src='images/logo.jpg' alt='Baby Bee логотип' width='40' height='40'>
+      <span class='brand__t'>Baby Bee<small>Шемонаиха</small></span>
+    </a>
+    <nav class='nav' aria-label='Разделы'>
+      <a href='#catalog'>Каталог</a>
+      <a href='#combos'>Наборы</a>
+      <a href='#sizes'>Подбор размера</a>
+      <a href='#how'>Как заказать</a>
+      <a href='#contacts'>Контакты</a>
+    </nav>
+    <button class='cartbtn' id='cartBtn' type='button' aria-label='Открыть корзину'>
+      <svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>
+        <path d='M6 7h12l-1 12H7L6 7z'/>
+        <path d='M9 7a3 3 0 0 1 6 0'/>
+      </svg>
+      <span class='cartbtn__n' id='cartN' hidden>0</span>
+    </button>
+  </div>
 </header>
+
 <main id='top'>
-<section class='hero'>
-<div class='wrap hero__in'>
-<div class='hero__t'>
-<p class='eyebrow'>Доставка по Шемонаихе</p>
-<h1>Всё для малыша и дома — с доставкой до двери</h1>
-<p class='lead'>Подгузники, салфетки и товары для дома. Выберите, добавьте в корзину и отправьте заказ в WhatsApp — без регистрации и лишних звонков.</p>
-<p class='deliv'>Бесплатно от 8 000 ₸ (или 500 ₸ по городу)</p>
-<div class='hero__cta'><a class='btn btn--p btn--lg' href='#catalog'>Выбрать товары</a><a class='btn btn--g btn--lg' href='#sizes'>Подобрать размер</a></div>
-<ul class='trust'><li><b id='heroCount'>50+</b><span>товаров в наличии</span></li><li><b>Kaspi · Halyk</b><span>или наличными</span></li><li><b>WhatsApp</b><span>заказ за минуту</span></li></ul>
-</div>
-<div class='hero__v'><img src='images/mascot.png' alt='Талисман Baby Bee' width='480' height='480' fetchpriority='high'></div>
-</div>
-</section>
-<section class='sizes wrap' id='sizes' aria-labelledby='sizesT'>
-<div class='sizes__box'>
-<div><p class='eyebrow'>Подбор размера</p><h2 id='sizesT'>Не знаете, какой размер взять?</h2><p class='mut'>Передвиньте ползунок на вес малыша или нажмите на размер — мы выберем его в каталоге.</p></div>
-<div class='sizes__ctl'>
-<div class='sizes__w'><button type='button' class='stp' data-act='wm' aria-label='Уменьшить вес на 1 кг'>−</button><output id='wOut' for='wRange'>8 кг</output><button type='button' class='stp' data-act='wp' aria-label='Увеличить вес на 1 кг'>+</button></div>
-<input id='wRange' type='range' min='2' max='30' step='1' value='8' aria-label='Вес малыша, кг'>
-<div class='sizes__r' id='wRes' aria-live='polite'></div>
-<button class='btn btn--p' id='wApply' type='button'>Показать в каталоге</button>
-</div>
-</div>
-</section>
-<section class='wrap combos' id='combos' aria-labelledby='comT'>
-<p class='eyebrow'>Готовые наборы</p><h2 id='comT'>Соберём всё нужное за один клик</h2>
-<div class='cgrid' id='cgrid'></div>
-</section>
-<section class='wrap cat' id='catalog' aria-labelledby='catT'>
-<div class='sec-h'><div><p class='eyebrow'>Каталог</p><h2 id='catT'>Выберите товары</h2></div><p class='mut' id='resCount' aria-live='polite'></p></div>
-<div class='tools'>
-<label class='srch'><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' aria-hidden='true'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg><input id='q' type='search' placeholder='Поиск: подгузники, XL, 6-11 кг, гель' autocomplete='off' enterkeyhint='search'></label>
-<select id='brand' aria-label='Бренд'></select>
-<select id='sort' aria-label='Сортировка'><option value='pop'>Сначала популярные</option><option value='asc'>Сначала дешевле</option><option value='desc'>Сначала дороже</option></select>
-</div>
-<div class='chips' id='chips' role='tablist' aria-label='Категории'></div>
-<div class='wtag' id='wTag' hidden></div>
-<div class='grid' id='grid' aria-live='polite'></div>
-</section>
-<section class='how wrap' id='how' aria-labelledby='howT'>
-<p class='eyebrow'>Как заказать</p><h2 id='howT'>Три простых шага</h2>
-<ol class='steps'>
-<li><span>1</span><h3>Выберите товары</h3><p>Добавьте нужные размеры и количество в корзину.</p></li>
-<li><span>2</span><h3>Отправьте в WhatsApp</h3><p>Укажите адрес — сообщение с заказом и суммой соберётся само.</p></li>
-<li><span>3</span><h3>Получите и оплатите</h3><p>Курьер привезёт до двери. Оплата Kaspi, Halyk или наличными.</p></li>
-</ol>
-</section>
+  <!-- Smart Hero: Компактный блок мгновенного взаимодействия -->
+  <section class='smart-hero wrap' id='smartHero'>
+    <div class='hero-radar' role='status'>
+      <span class='pulse-dot' aria-hidden='true'></span>
+      <span class='hero-radar__text'>Доставка по Шемонаихе <strong>~40 мин</strong> · Бесплатно от 8 000 ₸</span>
+      <a href='#how' class='hero-radar__link'>Условия</a>
+    </div>
+
+    <div class='omni-search'>
+      <svg class='omni-search__icon' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' aria-hidden='true'>
+        <circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/>
+      </svg>
+      <input id='q' class='omni-search__input' type='search' placeholder='Поиск: Baybee, трусики L, 9-14 кг, гель, салфетки...' autocomplete='off' enterkeyhint='search'>
+      <button id='qClear' class='omni-search__clear' type='button' aria-label='Очистить поиск' hidden>✕</button>
+    </div>
+
+    <!-- Быстрый выбор размера по весу малыша -->
+    <div class='quick-weights' role='group' aria-label='Быстрый подбор размера по весу'>
+      <span class='quick-weights__label'>Вес:</span>
+      <div class='quick-weights__scroll' id='qwScroll'>
+        <button type='button' class='qw-btn on' data-act='quick-w' data-w='all'>Все</button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='3.5' data-sz='NB'>2–5 кг <small>NB</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='6' data-sz='S'>4–8 кг <small>S</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='8.5' data-sz='M'>6–11 кг <small>M</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='11.5' data-sz='L'>9–14 кг <small>L</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='15' data-sz='XL'>12–18 кг <small>XL</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='18' data-sz='XXL'>15–22 кг <small>XXL</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='25' data-sz='XXXL'>20–30 кг <small>XXXL</small></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1-Tap Reorder Баннер: появляется для вернувшихся клиентов -->
+  <aside class='reorder-banner wrap' id='reorderBanner' hidden>
+    <div class='reorder-banner__in'>
+      <div class='reorder-banner__icon' aria-hidden='true'>🔁</div>
+      <div class='reorder-banner__content'>
+        <div class='reorder-banner__header'>
+          <span class='reorder-banner__badge'>Прошлый заказ</span>
+          <span class='reorder-banner__date' id='reorderDate'></span>
+        </div>
+        <p class='reorder-banner__desc' id='reorderSummary'></p>
+        <span class='reorder-banner__addr' id='reorderAddr'></span>
+      </div>
+      <div class='reorder-banner__actions'>
+        <button type='button' class='btn btn--p btn--sm reorder-btn' id='btnReorderOneTap'>
+          <span>Повторить</span>
+          <b id='reorderSum'>0 ₸</b>
+        </button>
+        <button type='button' class='reorder-close' id='btnDismissReorder' aria-label='Скрыть'>✕</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Desktop Hero Banner (плавно скрывается на смартфонах для экономии места) -->
+  <section class='hero'>
+    <div class='wrap hero__in'>
+      <div class='hero__t'>
+        <p class='eyebrow'>Забота без суеты · Шемонаиха</p>
+        <h1>Всё для малыша и дома с доставкой за ~40 минут</h1>
+        <p class='lead'>Японские подгузники, мягкие трусики, салфетки и экологичная бытовая химия. Заказ прямо в WhatsApp — без регистрации и лишних звонков.</p>
+        <div class='hero__cta'>
+          <a class='btn btn--p btn--lg' href='#catalog'>Открыть каталог</a>
+          <a class='btn btn--g btn--lg' href='#combos'>Готовые наборы</a>
+        </div>
+        <ul class='trust'>
+          <li><b id='heroCount'>50+</b><span>товаров в наличии</span></li>
+          <li><b>Kaspi · Halyk</b><span>QR или наличными</span></li>
+          <li><b>WhatsApp</b><span>заказ за 20 секунд</span></li>
+        </ul>
+      </div>
+      <div class='hero__v'>
+        <img src='images/mascot.png' alt='Талисман Baby Bee' width='440' height='440' fetchpriority='high'>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sticky Super-Header: Фиксируется под основным хэдером при скролле -->
+  <nav class='sticky-super' id='stickySuper' aria-label='Категории и фильтры'>
+    <div class='wrap sticky-super__in'>
+      <div class='chips' id='chips' role='tablist'></div>
+      <div class='sticky-super__ctl'>
+        <select id='brand' aria-label='Бренд'></select>
+        <select id='sort' class='mini-sort' aria-label='Сортировка'>
+          <option value='pop'>Популярные</option>
+          <option value='asc'>Сначала выгодные</option>
+          <option value='desc'>Сначала премиум</option>
+        </select>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Каталог товаров -->
+  <section class='wrap cat' id='catalog' aria-labelledby='catT'>
+    <div class='sec-h'>
+      <div>
+        <p class='eyebrow'>Каталог</p>
+        <h2 id='catT'>Выберите товары</h2>
+      </div>
+      <p class='mut' id='resCount' aria-live='polite'></p>
+    </div>
+
+    <div class='wtag' id='wTag' hidden></div>
+    <div class='grid' id='grid' aria-live='polite'></div>
+  </section>
+
+  <!-- Готовые комбо-наборы -->
+  <section class='wrap combos' id='combos' aria-labelledby='comT'>
+    <div class='sec-h'>
+      <div>
+        <p class='eyebrow'>Выгода и удобство</p>
+        <h2 id='comT'>Готовые комбо-наборы</h2>
+      </div>
+      <p class='mut'>Соберём всё нужное за один клик</p>
+    </div>
+    <div class='cgrid' id='cgrid'></div>
+  </section>
+
+  <!-- Детальный подбор размера по весу малыша -->
+  <section class='sizes wrap' id='sizes' aria-labelledby='sizesT'>
+    <div class='sizes__box'>
+      <div>
+        <p class='eyebrow'>Подбор размера</p>
+        <h2 id='sizesT'>Не знаете, какой размер взять?</h2>
+        <p class='mut'>Передвиньте ползунок на точный вес малыша или нажмите на размер — мы выставим его в каталоге автоматически.</p>
+      </div>
+      <div class='sizes__ctl'>
+        <div class='sizes__w'>
+          <button type='button' class='stp' data-act='wm' aria-label='Уменьшить вес на 1 кг'>−</button>
+          <output id='wOut' for='wRange'>8 кг</output>
+          <button type='button' class='stp' data-act='wp' aria-label='Увеличить вес на 1 кг'>+</button>
+        </div>
+        <input id='wRange' type='range' min='2' max='30' step='1' value='8' aria-label='Вес малыша, кг'>
+        <div class='sizes__r' id='wRes' aria-live='polite'></div>
+        <button class='btn btn--p' id='wApply' type='button'>Показать подходящие в каталоге</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Как заказать -->
+  <section class='how wrap' id='how' aria-labelledby='howT'>
+    <p class='eyebrow'>Простой сервис</p>
+    <h2 id='howT'>Как заказать в Baby Bee</h2>
+    <ol class='steps'>
+      <li>
+        <span>1</span>
+        <h3>Выберите товары</h3>
+        <p>Добавьте нужные размеры и количество в корзину в 1 клик.</p>
+      </li>
+      <li>
+        <span>2</span>
+        <h3>Отправьте в WhatsApp</h3>
+        <p>Укажите адрес — заявка и расчет доставки соберутся сами.</p>
+      </li>
+      <li>
+        <span>3</span>
+        <h3>Получите у двери</h3>
+        <p>Курьер доставит за ~40 мин. Оплата курьеру через Kaspi QR или наличными.</p>
+      </li>
+    </ol>
+  </section>
 </main>
+
 <footer class='ftr' id='contacts'>
-<div class='wrap ftr__in'>
-<div><div class='brand brand--l'><img src='images/logo.jpg' alt='' width='44' height='44'><span class='brand__t'>Baby Bee<small>Доставка в Шемонаихе</small></span></div><p class='mut'>Подгузники, салфетки и товары для дома. Быстро, удобно, по честным ценам.</p></div>
-<div><h3>Контакты</h3><a href='tel:+77779805639'>+7 (777) 980-56-39</a><a href='https://wa.me/77779805639' target='_blank' rel='noopener'>WhatsApp</a><a href='https://instagram.com/baby_bee_shemonaiha' target='_blank' rel='noopener'>Instagram @baby_bee_shemonaiha</a></div>
-<div><h3>Оплата и получение</h3><p>Kaspi Gold / QR</p><p>Halyk Bank</p><p>Наличными при получении</p><p>Доставка бесплатно от 8 000 ₸, иначе 500 ₸ по городу</p><p>Самовывоз: г. Шемонаиха</p></div>
-</div>
-<div class='wrap ftr__b'>© 2026 Baby Bee · г. Шемонаиха</div>
+  <div class='wrap ftr__in'>
+    <div>
+      <div class='brand brand--l'>
+        <img src='images/logo.jpg' alt='' width='44' height='44'>
+        <span class='brand__t'>Baby Bee<small>Доставка в Шемонаихе</small></span>
+      </div>
+      <p class='mut'>Подгузники, трусики, салфетки и эко-химия для дома. Быстро, заботливо и по честным ценам.</p>
+    </div>
+    <div>
+      <h3>Контакты и заказ</h3>
+      <a href='tel:+77779805639'>+7 (777) 980-56-39</a>
+      <a href='https://wa.me/77779805639' target='_blank' rel='noopener'>Написать в WhatsApp</a>
+      <a href='https://instagram.com/baby_bee_shemonaiha' target='_blank' rel='noopener'>Instagram @baby_bee_shemonaiha</a>
+    </div>
+    <div>
+      <h3>Оплата и получение</h3>
+      <p>Kaspi QR / Kaspi Gold</p>
+      <p>Halyk Bank / Наличными</p>
+      <p>Бесплатно от 8 000 ₸ (иначе 500 ₸ по городу)</p>
+      <p>Самовывоз: г. Шемонаиха</p>
+    </div>
+  </div>
+  <div class='wrap ftr__b'>© 2026 Baby Bee · Сервис заботливой доставки · г. Шемонаиха</div>
 </footer>
-<div class='bar' id='bar'><div><b id='barTotal'>0 ₸</b><span id='barCount'></span></div><button class='btn btn--p' id='barBtn' type='button'>Оформить заказ</button></div>
+
+<!-- Мобильный навигационный док под большой палец -->
+<nav class='mobile-dock' id='mobileDock' aria-label='Быстрая навигация'>
+  <div class='dock-item active' data-dock='catalog'>
+    <button type='button' class='dock-btn' id='dockCatalog'>
+      <span class='dock-icon'>🏠</span>
+      <span class='dock-label'>Каталог</span>
+    </button>
+  </div>
+  <div class='dock-item' data-dock='combos'>
+    <button type='button' class='dock-btn' id='dockCombos'>
+      <span class='dock-icon'>📦</span>
+      <span class='dock-label'>Комбо</span>
+    </button>
+  </div>
+  <div class='dock-item' data-dock='sizes'>
+    <button type='button' class='dock-btn' id='dockSizes'>
+      <span class='dock-icon'>⚖️</span>
+      <span class='dock-label'>Подбор</span>
+    </button>
+  </div>
+  <div class='dock-item dock-item--cart' data-dock='cart'>
+    <button type='button' class='dock-btn' id='dockCart'>
+      <div class='dock-icon-wrap'>
+        <span class='dock-icon'>🛍️</span>
+        <span class='dock-badge' id='dockBadge' hidden>0</span>
+      </div>
+      <div class='dock-cart-info'>
+        <span class='dock-label'>Корзина</span>
+        <span class='dock-total' id='dockTotal' hidden>0 ₸</span>
+      </div>
+    </button>
+  </div>
+</nav>
+
+<!-- Старая плашка бара для планшетов/десктопа -->
+<div class='bar' id='bar'>
+  <div><b id='barTotal'>0 ₸</b><span id='barCount'></span></div>
+  <button class='btn btn--p' id='barBtn' type='button'>Оформить заказ</button>
+</div>
+
+<!-- Модальное окно корзины / чекаута -->
 <div class='scrim' id='scrim' hidden></div>
 <aside class='drawer' id='drawer' role='dialog' aria-modal='true' aria-labelledby='drT' aria-hidden='true'>
-<div class='drawer__h'><h2 id='drT'>Корзина</h2><button class='icon' id='drClose' type='button' aria-label='Закрыть'>✕</button></div>
-<div class='drawer__b' id='drBody'>
-<div id='items'></div>
-<form id='form' class='form' novalidate>
-<div class='seg' role='radiogroup' aria-label='Способ получения'><label><input type='radio' name='mode' value='Доставка курьером' checked><span>Доставка</span></label><label><input type='radio' name='mode' value='Самовывоз'><span>Самовывоз</span></label></div>
-<p class='note' id='pickNote' hidden>Пункт выдачи: г. Шемонаиха</p>
-<label class='fld'>Ваше имя<input id='fName' name='name' autocomplete='name' placeholder='Как к вам обращаться'></label>
-<label class='fld' id='addrWrap'>Адрес доставки<input id='fAddr' name='addr' autocomplete='street-address' placeholder='Улица, дом, квартира'><em class='err' id='addrErr' hidden>Укажите адрес доставки</em></label>
-<label class='chk' id='silentWrap'><input type='checkbox' id='fSilent'><span>🤫 Тихая доставка (малыш спит) — курьер напишет в WhatsApp у двери</span></label>
-<label class='fld'>Оплата<select id='fPay'><option>Kaspi QR / Kaspi Gold</option><option>Halyk Bank</option><option>Наличными при получении</option></select></label>
-<label class='fld'>Комментарий<textarea id='fNote' rows='2' placeholder='Домофон, удобное время, пожелания'></textarea></label>
-</form>
-</div>
-<div class='drawer__f' id='drFoot'><p class='ship' id='ship'></p><div class='tot'><span>Итого</span><b id='total'>0 ₸</b></div><button class='btn btn--p btn--lg btn--wa' id='send' type='button'>Отправить заказ в WhatsApp</button><p class='mut small'>Заказ откроется в WhatsApp — останется нажать «Отправить».</p></div>
-<div class='done' id='done' hidden><div class='done__i'>✓</div><h3 id='doneT'>Заказ сформирован</h3><p class='mut'>Отправьте сообщение в WhatsApp — мы подтвердим наличие и время доставки.</p><p class='note'>Оплата при получении курьеру через Kaspi QR / перевод на +7 (777) 980-56-39</p><a class='btn btn--p btn--lg btn--wa' id='doneWa' href='#'>Открыть WhatsApp</a><button class='btn btn--g' id='newOrder' type='button'>Закрыть</button></div>
+  <div class='drawer__h'>
+    <h2 id='drT'>Корзина</h2>
+    <button class='icon' id='drClose' type='button' aria-label='Закрыть'>✕</button>
+  </div>
+  <div class='drawer__b' id='drBody'>
+    <!-- Шкала бесплатной доставки -->
+    <div class='ship-bar' id='shipBar'>
+      <div class='ship-bar__track'><div class='ship-bar__fill' id='shipFill'></div></div>
+      <p class='ship' id='ship'></p>
+    </div>
+
+    <!-- Список товаров в корзине -->
+    <div id='items'></div>
+
+    <!-- Блок быстрой допродажи салфеток / геля в корзине -->
+    <div class='cart-upsell' id='cartUpsell' hidden>
+      <div class='cart-upsell__t'>💡 Возьмите в заказ для бесплатной доставки:</div>
+      <div class='cart-upsell__item' id='cartUpsellItem'></div>
+    </div>
+
+    <!-- Форма получателя -->
+    <form id='form' class='form' novalidate>
+      <div class='seg' role='radiogroup' aria-label='Способ получения'>
+        <label><input type='radio' name='mode' value='Доставка курьером' checked><span>Доставка</span></label>
+        <label><input type='radio' name='mode' value='Самовывоз'><span>Самовывоз</span></label>
+      </div>
+      <p class='note' id='pickNote' hidden>Пункт выдачи: г. Шемонаиха</p>
+      <label class='fld'>Ваше имя
+        <input id='fName' name='name' autocomplete='name' placeholder='Как к вам обращаться'>
+      </label>
+      <label class='fld' id='addrWrap'>Адрес доставки
+        <input id='fAddr' name='addr' autocomplete='street-address' placeholder='Улица, дом, квартира'>
+        <em class='err' id='addrErr' hidden>Укажите адрес доставки</em>
+      </label>
+      <label class='chk' id='silentWrap'>
+        <input type='checkbox' id='fSilent'>
+        <span>🤫 Тихая доставка (малыш спит) — курьер напишет в WhatsApp у двери</span>
+      </label>
+      <label class='fld'>Способ оплаты
+        <select id='fPay'>
+          <option>Kaspi QR / Kaspi Gold</option>
+          <option>Halyk Bank</option>
+          <option>Наличными курьеру</option>
+        </select>
+      </label>
+      <label class='fld'>Комментарий
+        <textarea id='fNote' rows='2' placeholder='Подъезд, этаж, домофон или пожелания'></textarea>
+      </label>
+    </form>
+  </div>
+
+  <div class='drawer__f' id='drFoot'>
+    <div class='tot'>
+      <span>Итого к оплате</span>
+      <b id='total'>0 ₸</b>
+    </div>
+    <button class='btn btn--p btn--lg btn--wa' id='send' type='button'>Отправить заказ в WhatsApp</button>
+    <p class='mut small'>Заказ откроется в WhatsApp — останется нажать кнопку «Отправить».</p>
+  </div>
+
+  <!-- Экран подтверждения заказа -->
+  <div class='done' id='done' hidden>
+    <div class='done__i'>✓</div>
+    <h3 id='doneT'>Заказ сформирован</h3>
+    <p class='mut'>Отправьте сообщение в WhatsApp — мы сразу подтвердим наличие и время выезда курьера.</p>
+    <div class='qr-box' id='qrBox'>
+      <p class='note'>Оплата при получении курьеру через <strong>Kaspi QR</strong> или перевод на <strong>+7 (777) 980-56-39</strong></p>
+    </div>
+    <a class='btn btn--p btn--lg btn--wa' id='doneWa' href='#'>Открыть WhatsApp</a>
+    <button class='btn btn--g' id='newOrder' type='button'>Закрыть</button>
+  </div>
 </aside>
+
 <div class='toast' id='toast' role='status' aria-live='polite'></div>
-<noscript><p style='padding:24px;text-align:center'>Для работы каталога включите JavaScript или напишите нам в WhatsApp: +7 (777) 980-56-39</p></noscript>
+
+<noscript>
+  <p style='padding:24px;text-align:center'>Для работы каталога включите JavaScript или напишите нам напрямую в WhatsApp: +7 (777) 980-56-39</p>
+</noscript>
+
 <script src='js/app.js' defer></script>
 </body>
 </html>
