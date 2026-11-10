@@ -15,6 +15,7 @@
 <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
 <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap&subset=cyrillic'>
 <link rel='stylesheet' href='css/style.css'>
+<link rel='stylesheet' href='css/fixes.css'>
 <script type='application/ld+json'>{"@context":"https://schema.org","@type":"Store","name":"Baby Bee","telephone":"+77779805639","address":{"@type":"PostalAddress","addressLocality":"Шемонаиха","addressCountry":"KZ"},"sameAs":["https://instagram.com/baby_bee_shemonaiha"]}</script>
 </head>
 <body>
@@ -44,7 +45,6 @@
 </header>
 
 <main id='top'>
-  <!-- Smart Hero: Компактный блок мгновенного взаимодействия -->
   <section class='smart-hero wrap' id='smartHero'>
     <div class='hero-radar' role='status'>
       <span class='pulse-dot' aria-hidden='true'></span>
@@ -60,23 +60,21 @@
       <button id='qClear' class='omni-search__clear' type='button' aria-label='Очистить поиск' hidden>✕</button>
     </div>
 
-    <!-- Быстрый выбор размера по весу малыша -->
     <div class='quick-weights' role='group' aria-label='Быстрый подбор размера по весу'>
       <span class='quick-weights__label'>Вес:</span>
       <div class='quick-weights__scroll' id='qwScroll'>
-        <button type='button' class='qw-btn on' data-act='quick-w' data-w='all'>Все</button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='3.5' data-sz='NB'>2–5 кг <small>NB</small></button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='6' data-sz='S'>4–8 кг <small>S</small></button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='8.5' data-sz='M'>6–11 кг <small>M</small></button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='11.5' data-sz='L'>9–14 кг <small>L</small></button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='15' data-sz='XL'>12–18 кг <small>XL</small></button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='18' data-sz='XXL'>15–22 кг <small>XXL</small></button>
-        <button type='button' class='qw-btn' data-act='quick-w' data-w='25' data-sz='XXXL'>20–30 кг <small>XXXL</small></button>
+        <button type='button' class='qw-btn on' data-act='quick-w' data-w='all' aria-pressed='true'>Все</button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='3.5' data-sz='NB' aria-pressed='false'>2–5 кг <small>NB</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='6' data-sz='S' aria-pressed='false'>4–8 кг <small>S</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='8.5' data-sz='M' aria-pressed='false'>6–11 кг <small>M</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='11.5' data-sz='L' aria-pressed='false'>9–14 кг <small>L</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='15' data-sz='XL' aria-pressed='false'>12–18 кг <small>XL</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='18' data-sz='XXL' aria-pressed='false'>15–22 кг <small>XXL</small></button>
+        <button type='button' class='qw-btn' data-act='quick-w' data-w='25' data-sz='XXXL' aria-pressed='false'>20–30 кг <small>XXXL</small></button>
       </div>
     </div>
   </section>
 
-  <!-- 1-Tap Reorder Баннер: появляется для вернувшихся клиентов -->
   <aside class='reorder-banner wrap' id='reorderBanner' hidden>
     <div class='reorder-banner__in'>
       <div class='reorder-banner__icon' aria-hidden='true'>🔁</div>
@@ -98,7 +96,6 @@
     </div>
   </aside>
 
-  <!-- Desktop Hero Banner (плавно скрывается на смартфонах для экономии места) -->
   <section class='hero'>
     <div class='wrap hero__in'>
       <div class='hero__t'>
@@ -110,21 +107,20 @@
           <a class='btn btn--g btn--lg' href='#combos'>Готовые наборы</a>
         </div>
         <ul class='trust'>
-          <li><b id='heroCount'>50+</b><span>товаров в наличии</span></li>
+          <li><b id='heroCount'>50+</b><span>товаров в каталоге</span></li>
           <li><b>Kaspi · Halyk</b><span>QR или наличными</span></li>
-          <li><b>WhatsApp</b><span>заказ за 20 секунд</span></li>
+          <li><b>WhatsApp</b><span>заказ за минуту</span></li>
         </ul>
       </div>
       <div class='hero__v'>
-        <img src='images/mascot.png' alt='Талисман Baby Bee' width='440' height='440' fetchpriority='high'>
+        <img src='images/mascot.png' alt='Талисман Baby Bee' width='440' height='440' loading='lazy' decoding='async'>
       </div>
     </div>
   </section>
 
-  <!-- Sticky Super-Header: Фиксируется под основным хэдером при скролле -->
   <nav class='sticky-super' id='stickySuper' aria-label='Категории и фильтры'>
     <div class='wrap sticky-super__in'>
-      <div class='chips' id='chips' role='tablist'></div>
+      <div class='chips' id='chips' role='group' aria-label='Категории'></div>
       <div class='sticky-super__ctl'>
         <select id='brand' aria-label='Бренд'></select>
         <select id='sort' class='mini-sort' aria-label='Сортировка'>
@@ -136,7 +132,6 @@
     </div>
   </nav>
 
-  <!-- Каталог товаров -->
   <section class='wrap cat' id='catalog' aria-labelledby='catT'>
     <div class='sec-h'>
       <div>
@@ -147,10 +142,9 @@
     </div>
 
     <div class='wtag' id='wTag' hidden></div>
-    <div class='grid' id='grid' aria-live='polite'></div>
+    <div class='grid' id='grid'></div>
   </section>
 
-  <!-- Готовые комбо-наборы -->
   <section class='wrap combos' id='combos' aria-labelledby='comT'>
     <div class='sec-h'>
       <div>
@@ -162,7 +156,6 @@
     <div class='cgrid' id='cgrid'></div>
   </section>
 
-  <!-- Детальный подбор размера по весу малыша -->
   <section class='sizes wrap' id='sizes' aria-labelledby='sizesT'>
     <div class='sizes__box'>
       <div>
@@ -183,7 +176,6 @@
     </div>
   </section>
 
-  <!-- Как заказать -->
   <section class='how wrap' id='how' aria-labelledby='howT'>
     <p class='eyebrow'>Простой сервис</p>
     <h2 id='howT'>Как заказать в Baby Bee</h2>
@@ -201,7 +193,7 @@
       <li>
         <span>3</span>
         <h3>Получите у двери</h3>
-        <p>Курьер доставит за ~40 мин. Оплата курьеру через Kaspi QR или наличными.</p>
+        <p>Курьер доставит за ~40 мин. Оплата курьеру через Kaspi QR, Halyk или наличными.</p>
       </li>
     </ol>
   </section>
@@ -233,7 +225,6 @@
   <div class='wrap ftr__b'>© 2026 Baby Bee · Сервис заботливой доставки · г. Шемонаиха</div>
 </footer>
 
-<!-- Мобильный навигационный док под большой палец -->
 <nav class='mobile-dock' id='mobileDock' aria-label='Быстрая навигация'>
   <div class='dock-item active' data-dock='catalog'>
     <button type='button' class='dock-btn' id='dockCatalog'>
@@ -267,13 +258,11 @@
   </div>
 </nav>
 
-<!-- Старая плашка бара для планшетов/десктопа -->
 <div class='bar' id='bar'>
   <div><b id='barTotal'>0 ₸</b><span id='barCount'></span></div>
   <button class='btn btn--p' id='barBtn' type='button'>Оформить заказ</button>
 </div>
 
-<!-- Модальное окно корзины / чекаута -->
 <div class='scrim' id='scrim' hidden></div>
 <aside class='drawer' id='drawer' role='dialog' aria-modal='true' aria-labelledby='drT' aria-hidden='true'>
   <div class='drawer__h'>
@@ -281,22 +270,18 @@
     <button class='icon' id='drClose' type='button' aria-label='Закрыть'>✕</button>
   </div>
   <div class='drawer__b' id='drBody'>
-    <!-- Шкала бесплатной доставки -->
     <div class='ship-bar' id='shipBar'>
       <div class='ship-bar__track'><div class='ship-bar__fill' id='shipFill'></div></div>
       <p class='ship' id='ship'></p>
     </div>
 
-    <!-- Список товаров в корзине -->
     <div id='items'></div>
 
-    <!-- Блок быстрой допродажи салфеток / геля в корзине -->
     <div class='cart-upsell' id='cartUpsell' hidden>
-      <div class='cart-upsell__t'>💡 Возьмите в заказ для бесплатной доставки:</div>
+      <div class='cart-upsell__t'>💡 Добавьте до бесплатной доставки:</div>
       <div class='cart-upsell__item' id='cartUpsellItem'></div>
     </div>
 
-    <!-- Форма получателя -->
     <form id='form' class='form' novalidate>
       <div class='seg' role='radiogroup' aria-label='Способ получения'>
         <label><input type='radio' name='mode' value='Доставка курьером' checked><span>Доставка</span></label>
@@ -336,7 +321,6 @@
     <p class='mut small'>Заказ откроется в WhatsApp — останется нажать кнопку «Отправить».</p>
   </div>
 
-  <!-- Экран подтверждения заказа -->
   <div class='done' id='done' hidden>
     <div class='done__i'>✓</div>
     <h3 id='doneT'>Заказ сформирован</h3>
@@ -345,6 +329,7 @@
       <p class='note'>Оплата при получении курьеру через <strong>Kaspi QR</strong> или перевод на <strong>+7 (777) 980-56-39</strong></p>
     </div>
     <a class='btn btn--p btn--lg btn--wa' id='doneWa' href='#'>Открыть WhatsApp</a>
+    <button class='btn btn--g' id='restoreCart' type='button'>Вернуть товары в корзину</button>
     <button class='btn btn--g' id='newOrder' type='button'>Закрыть</button>
   </div>
 </aside>
